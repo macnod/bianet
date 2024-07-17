@@ -16,6 +16,8 @@ test-network:
 	  --eval "(prove:run #P\"$(TEST_NETWORK_FILE)\" :reporter :$(REPORTER))" \
 	  --non-interactive
 
+test:	test-neuron	test-network
+
 # work:
 # 	$(LISP) --eval "(ql:quickload :prove)" \
 # 	  --eval "(require :prove)" \

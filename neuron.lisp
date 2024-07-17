@@ -120,14 +120,14 @@
    (outgoing :accessor outgoing :type dlist :initform (make-instance 'dlist))
    (ff-count :accessor ff-count :type integer :initform 0)
    (bp-count :accessor bp-count :type integer :initform 0)
-   (on-backprop :accessor on-backprop
-                :type (or function null)
-                :initarg :on-backprop
-                :initform nil)
-   (on-output :accessor on-output
-              :type (or function null)
-              :initarg :on-output
-              :initform nil)
+   (on-input-ready :accessor on-input-ready
+                   :type (or function null)
+                   :initarg :on-input-ready
+                   :initform nil)
+   (on-output-ready :accessor on-output-ready
+                    :type (or function null)
+                    :initarg :on-output-ready
+                    :initform nil)
    (process-count :accessor process-count :type integer :initform 0)
    (i-mailbox :accessor i-mailbox :type mailbox :initform (make-mailbox))
    (e-mailbox :accessor e-mailbox :type mailbox :initform (make-mailbox))
@@ -228,7 +228,7 @@
     (incf (ff-count neuron))
     (setf (excited neuron) nil)
     (setf (excitation-count neuron) 0)
-    (when (on-output neuron) (funcall (on-output neuron) neuron)))
+    (when (on-output-ready neuron) (funcall (on-output-ready neuron))))
   (when (modulated neuron)
     (dlog "neuron::process Modulated ~a with ~,3f" 
           (name neuron) (err-in neuron))
@@ -238,7 +238,7 @@
     (incf (bp-count neuron))
     (setf (modulated neuron) nil)
     (setf (modulation-count neuron) 0)
-    (when (on-backprop neuron) (funcall (on-backprop neuron) neuron)))
+    (when (on-input-ready neuron) (funcall (on-input-ready neuron))))
   (incf (process-count neuron)))
 
 (defmethod evaluate-input-messages ((neuron t-neuron))

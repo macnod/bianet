@@ -26,7 +26,7 @@
     (string-downcase
      (subseq long-name 11 (1- (length long-name))))))
 
-(plan 1)
+(plan 2)
 
 (subtest
  "Create simple network (2 4 2 1)"
@@ -35,23 +35,21 @@
         (topology-total (reduce '+ topology))
         (expected-biases (- (length topology) 2)) ;; Add biases to hidden layers
         (total-neurons (+ topology-total expected-biases))
-        (net (create-simple-network topology)))
-   (let ((count (length net)))
+        (net (make-instance 't-network :name "test-1" :topology topology)))
+   (let ((count (length (neurons net))))
      (is-f count total-neurons "net contains ~d neurons" total-neurons))
-   (let ((biases (length (remove-if-not #'biased net))))
+   (let ((biases (length (remove-if-not #'biased (neurons net)))))
      (is-f biases expected-biases 
            "net contains ~d biased neurons" expected-biases))
-   (let* ((layers (loop for a from 0 below (length topology)
-                        collect (remove-if-not 
-                                 (lambda (n) (= (layer n) a)) 
-                                 net)))
-          (layer-lengths (loop for layer in layers collect (length layer))))
+   (let* ((layer-lengths (loop for layer in (layers net)
+                               collect (length layer))))
      (is-f (nth 0 layer-lengths) 2 "Layer 0 has 2 neurons")
      (is-f (nth 1 layer-lengths) 5 "Layer 1 has 5 neurons")
      (is-f (nth 2 layer-lengths) 3 "Layer 2 has 3 neurons")
      (is-f (nth 3 layer-lengths) 1 "Layer 3 has 1 neuron"))
-   (loop for neuron in net
-         for transfer-function-name = (function-name (transfer-function neuron))
+   (loop for neuron in (neurons net)
+         for transfer-function-name = (function-name 
+                                       (transfer-function neuron))
          for transfer-derivative-name = (function-name 
                                          (transfer-derivative neuron))
          do
@@ -75,9 +73,38 @@
                    (is-f transfer-derivative-name "biased-derivative"
                          "...and derivative function biased-derivative"))))))
 
-;; (subtest
-;;  "Create a simple neural network to solve XOR"
-;;  (reset-state)
-;;  (let* ((topology '(2 4
-
+(subtest
+ "Train a simple network with XOR"
+ (loop with net = (make-instance 't-network :name "test-1" :topology '(2 4 1))
+       and running = t
+       with thread = (make-thread
+                      (lambda ()
+                        (loop while running do
+                          (loop for neuron in (neurons net) 
+                                do (process neuron))
+                          (loop for neuron in (neurons-reversed net) 
+                                do (process neuron))
+                          (sleep 0.1)))
+                      :name "xor-network")
+       and output-count = (length (output-layer net))
+       and input-count = (length (input-layer net))
+       and iterations = 10
+       and training-set = '(((0 0) (0))
+                            ((0 1) (1))
+                            ((1 0) (1))
+                            ((1 1) (0)))
+       and target-error = 0.05
+       for iteration from 1 to iterations
+       do (loop for (inputs expected-outputs) in training-set
+                for outputs = (excite net inputs)
+                do (modulate net expected-outputs))
+       finally (loop for (inputs expected-outputs) in training-set
+                     for outputs = (excite net inputs)
+                     for errors = (output-errors outputs expected-outputs)
+                     do (is-f (< (car errors) 0.05) t
+                              "(~{~a~^, ~}) -> ~{~a~^, ~}; expected=(~{~a~^, ~}); errors=(~{~a~^, ~})"
+                              inputs outputs expected-outputs errors)
+                     finally
+                        (setf running nil)
+                        (join-thread thread))))
 (finalize)

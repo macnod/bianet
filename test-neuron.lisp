@@ -90,8 +90,8 @@
                        (setf bp-complete t)))
         (neuron (make-instance 't-neuron
                                :transfer-key :relu
-                               :on-output ff-callback
-                               :on-backprop bp-callback)))
+                               :on-output-ready ff-callback
+                               :on-input-ready bp-callback)))
    (is (id neuron) 1 "Neuron ID is 1")
    (ok (not (biased neuron)) "Neuron is not biased")
    (is (function-name (transfer-function neuron)) "relu"
@@ -164,10 +164,10 @@
                                       (setf backprop-complete t)))
         (neuron-1 (make-instance 't-neuron
                                  :transfer-key :relu
-                                 :on-backprop backprop-complete-callback))
+                                 :on-input-ready backprop-complete-callback))
         (neuron-2 (make-instance 't-neuron
                                  :transfer-key :relu
-                                 :on-output output-ready-callback))
+                                 :on-output-ready output-ready-callback))
         (neurons (list neuron-1 neuron-2))
         (cx (connect neuron-1 neuron-2 :weight 0.5)))
    (is (id neuron-1) 1 "neuron-1 id is 1")
@@ -229,10 +229,10 @@
                                 (setf bp-complete t)))
         (neuron-1 (make-instance 't-neuron
                                  :transfer-key :relu
-                                 :on-backprop bp-complete-callback))
+                                 :on-input-ready bp-complete-callback))
         (neuron-2 (make-instance 't-neuron
                                  :transfer-key :relu
-                                 :on-output ff-complete-callback))
+                                 :on-output-ready ff-complete-callback))
         (neurons (list neuron-1 neuron-2))
         (cx (connect neuron-1 neuron-2 :weight 0.5))
         (thread-pool (loop for neuron in neurons 
@@ -310,14 +310,16 @@
            (name neuron)
            (mapcar #'id cxs))
      (is-f (id (disconnect upstream-neuron neuron)) 3
-           "disconnected incoming connection from upstream neuron ~a"
+           "disconnected neuron ~a from upstream neuron ~a (cx 3)"
+           (name neuron)
            (name upstream-neuron))
      (setf cxs (append (list-incoming neuron) (list-outgoing neuron)))
      (is-f (length cxs) (1- count)
            "neuron ~a now has ~d connections"
            (name neuron) (1- count))
      (is-f (id (disconnect neuron downstream-neuron)) 8
-           "disconnected outgoing connection to downstream neuron ~a"
+           "disconnected neuron ~a from downstream neuron ~a (cx 8)"
+           (name neuron)
            (name downstream-neuron))
      (setf cxs (append (list-incoming neuron) (list-outgoing neuron)))
      (is-f (length cxs) (- count 2)

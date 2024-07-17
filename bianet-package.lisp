@@ -1,5 +1,5 @@
 (defpackage :bianet
-  (:use :cl :dc-dlist :dc-eclectic :sb-concurrency :sb-thread :cl-ppcre)
+  (:use :cl :sb-concurrency :sb-thread :cl-ppcre :dc-eclectic :dc-dlist)
   (:export
    ;; neuron methods
    adjust-weight
@@ -11,7 +11,7 @@
    disconnect
    evaluate-error-messages
    evaluate-input-messages
-   excite
+   excite ;; this is a network method as well
    excite-internal
    fire-error
    fire-output
@@ -83,13 +83,23 @@
    weight
    weight-last
 
+   ;; network attributes
+   input-layer
+   inputs-ready-count
+   layers
+   name
+   neurons
+   neurons-reversed
+   output-layer
+   outputs-ready-count
+   t-network
+   topology
+
    ;; network methods
-   **inputs-ready-count**
-   **outputs-ready-count**
    compute-cx-count
    compute-weights-random
    compute-weights-sinusoidal
-   connect-layers
-   create-simple-network
-   simple-network-layers
+   output-errors
+   wait-for-inputs
+   wait-for-outputs
    ))
