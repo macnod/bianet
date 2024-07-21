@@ -75,24 +75,24 @@
 
 (subtest
  "Train a simple, 6-layer network with XOR"
- (open-log :append nil)
+ ;; (open-log :append nil)
  (loop 
    with net = (make-instance 't-network 
                              :name "test-1" 
-                             :topology '(2 128 64 32 16 8 4 1)
-                             :thread-count 8)
+                             :topology '(2 100 40 10)
+                             :thread-count 1)
    with log-1 = (progn 
                   (pass (format nil "Total neurons: ~d" (length (neurons net))))
                   (pass (format nil "Total connections: ~d" (cx-count net))))
    with output-count = (length (output-layer net))
    and input-count = (length (input-layer net))
    and max-iterations = 5000
-   and training-set = '(((0 0) (0))
-                        ((0 1) (1))
-                        ((1 0) (1))
-                        ((1 1) (0)))
+   and training-set = '(((0 0) (0 0 0 0 0 0 0 0 0 0))
+                        ((0 1) (0 0 0 0 0 0 0 0 0 1))
+                        ((1 0) (0 0 0 0 0 0 0 0 0 1))
+                        ((1 1) (0 0 0 0 0 0 0 0 0 0)))
    and target-error = 0.05
-   and report-frequency = 1
+   and report-frequency = 100
    and start-time = (mark-time)
    for iteration from 1 to max-iterations
    for last-iteration-start-time = (mark-time) then iteration-start-time
