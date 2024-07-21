@@ -134,7 +134,7 @@
                   :initform (make-mutex :name "process-mutex"))
    (i-mailbox :accessor i-mailbox :type mailbox :initform (make-mailbox))
    (e-mailbox :accessor e-mailbox :type mailbox :initform (make-mailbox))
-   (job-queue :accessor job-queue :initarg :job-queue :type (or null mailbox)
+   (job-queue :accessor job-queue :initarg :job-queue :type (or null function)
               :initform nil)
    (running :accessor running :type boolean :initform t)))
 
@@ -285,7 +285,7 @@
 
 (defmethod excite ((neuron t-neuron) value)
   (send-message (i-mailbox neuron) value)
-  (send-message (job-queue neuron) neuron)
+  (funcall (job-queue neuron) neuron)
   (dlog "neuron::excite ~a with ~,3f, pushing to job-queue"
         (name neuron) value)
   value)
@@ -302,7 +302,7 @@
 
 (defmethod modulate ((neuron t-neuron) err)
   (send-message (e-mailbox neuron) err)
-  (send-message (job-queue neuron) neuron)
+  (funcall (job-queue neuron) neuron)
   ;; (dlog "neuron::modulate ~a with ~,3f, pushing to job-queue"
   ;;       (name neuron) err)
   err)

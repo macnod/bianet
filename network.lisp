@@ -25,6 +25,9 @@
                  :type integer :initform *default-thread-count*)
    (thread-pool :accessor thread-pool :type list
                 :initform nil)
+   (job-set :accessor job-set :type hash-table :initform (make-hash-table))
+   (job-set-mutex :accessor job-set-mutex :type mutex
+                  :initform (make-mutex :name "job-set-mutex"))
    (job-queue :accessor job-queue :type mailbox :initform (make-mailbox))))
 
 (defmethod initialize-instance :after ((network t-network) &key)
@@ -38,21 +41,26 @@
           (output-count network) (length output-layer))
     (start-threads network)))
 
-;; (defmethod thread-work ((network t-network) (neurons list))
-;;   (lambda ()
-;;     (loop 
-;;       with neurons-reversed = (reverse neurons)
-;;       while (running network)
-;;       for iteration = 0 then (1+ iteration)
-;;       do (loop for neuron in neurons
-;;                do (process neuron))
-;;          (loop for neuron in neurons-reversed
-;;                do (process neuron)))))
+(defmethod dequeue-job ((network t-network))
+  (let ((neuron (receive-message (job-queue network) :timeout 0.1)))
+    (when neuron
+      (with-mutex ((job-set-mutex network))
+        (remhash (id neuron) (job-set network)))
+      neuron)))
+
+(defmethod enqueue-job ((network t-network))
+  (let ((queue (job-queue network))
+        (hash (job-set network))
+        (mutex (job-set-mutex network)))
+    (lambda (neuron)
+      (unless (with-mutex (mutex) (gethash (id neuron) hash))
+        (with-mutex (mutex) (setf (gethash (id neuron) hash) (id neuron)))
+        (send-message queue neuron)))))
 
 (defmethod thread-work ((network t-network))
   (lambda ()
     (loop while (running network)
-          for neuron = (receive-message (job-queue network) :timeout 0.1)
+          for neuron = (dequeue-job network)
           when neuron 
             do (process neuron))))
 
@@ -147,7 +155,7 @@
                                     :transfer-key transfer-key
                                     :biased biased
                                     :layer layer-index
-                                    :job-queue (job-queue network)
+                                    :job-queue (enqueue-job network)
                                     :on-output-ready output-ready-callback))
                     (is-input-layer
                      ;; (dlog "Creating input-layer neuron")
@@ -155,7 +163,7 @@
                                     :transfer-key transfer-key
                                     :biased biased
                                     :layer layer-index
-                                    :job-queue (job-queue network)
+                                    :job-queue (enqueue-job network)
                                     :on-input-ready input-ready-callback))
                     (t 
                      ;; (dlog "Creating hidden-layer neuron")
@@ -164,7 +172,7 @@
                         :transfer-key transfer-key
                         :biased biased
                         :layer layer-index
-                        :job-queue (job-queue network)))))))
+                        :job-queue (enqueue-job network)))))))
 
 (defmethod make-simple-network ((network t-network))
   ;; (dlog "network::make-simple-network")
