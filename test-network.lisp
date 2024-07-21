@@ -74,37 +74,53 @@
                          "...and derivative function biased-derivative"))))))
 
 (subtest
- "Train a simple network with XOR"
- (loop with net = (make-instance 't-network :name "test-1" :topology '(2 4 1))
-       and running = t
-       with thread = (make-thread
-                      (lambda ()
-                        (loop while running do
-                          (loop for neuron in (neurons net) 
-                                do (process neuron))
-                          (loop for neuron in (neurons-reversed net) 
-                                do (process neuron))
-                          (sleep 0.1)))
-                      :name "xor-network")
-       and output-count = (length (output-layer net))
-       and input-count = (length (input-layer net))
-       and iterations = 10
-       and training-set = '(((0 0) (0))
-                            ((0 1) (1))
-                            ((1 0) (1))
-                            ((1 1) (0)))
-       and target-error = 0.05
-       for iteration from 1 to iterations
-       do (loop for (inputs expected-outputs) in training-set
-                for outputs = (excite net inputs)
-                do (modulate net expected-outputs))
-       finally (loop for (inputs expected-outputs) in training-set
-                     for outputs = (excite net inputs)
-                     for errors = (output-errors outputs expected-outputs)
-                     do (is-f (< (car errors) 0.05) t
-                              "(~{~a~^, ~}) -> ~{~a~^, ~}; expected=(~{~a~^, ~}); errors=(~{~a~^, ~})"
-                              inputs outputs expected-outputs errors)
-                     finally
-                        (setf running nil)
-                        (join-thread thread))))
+ "Train a simple, 6-layer network with XOR"
+ (open-log :append nil)
+ (loop 
+   with net = (make-instance 't-network 
+                             :name "test-1" 
+                             :topology '(2 128 64 32 16 8 4 1)
+                             :thread-count 8)
+   with log-1 = (progn 
+                  (pass (format nil "Total neurons: ~d" (length (neurons net))))
+                  (pass (format nil "Total connections: ~d" (cx-count net))))
+   with output-count = (length (output-layer net))
+   and input-count = (length (input-layer net))
+   and max-iterations = 5000
+   and training-set = '(((0 0) (0))
+                        ((0 1) (1))
+                        ((1 0) (1))
+                        ((1 1) (0)))
+   and target-error = 0.05
+   and report-frequency = 1
+   and start-time = (mark-time)
+   for iteration from 1 to max-iterations
+   for last-iteration-start-time = (mark-time) then iteration-start-time
+   for iteration-start-time = (mark-time)
+   for current-error = (when (zerop (mod iteration report-frequency))
+                         (let ((elapsed (elapsed-time last-iteration-start-time))
+                               (e (max-error net training-set)))
+                           (pass 
+                            (format 
+                             nil
+                             "training iteration ~d: error=~,3f; time=~,3fs"
+                             iteration e elapsed))
+                           e))
+   while (or (null current-error) (> current-error target-error))
+   do (loop for (inputs expected-outputs) in training-set
+            for outputs = (excite net inputs)
+            do (modulate net expected-outputs))
+   finally 
+      (let ((elapsed (elapsed-time start-time)))
+        (loop for (inputs expected-outputs) in training-set
+              for outputs = (excite net inputs)
+              for err-dist = (eucledian-error outputs expected-outputs)
+              do (is-f (< err-dist 0.05) t
+                       "(~{~a~^, ~}) -> (~{~a~^, ~}); expected=(~{~a~^, ~}); error=~,3f"
+                       inputs outputs expected-outputs err-dist)
+              finally
+                 (stop-threads net))
+        (pass (format nil "Completed training in ~d iterations and ~,3f seconds"
+                      iteration elapsed)))))
+
 (finalize)

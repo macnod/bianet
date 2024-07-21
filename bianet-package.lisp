@@ -65,9 +65,10 @@
    learning-rate
    modulated
    modulation-count
+   modulator-count
    momentum
-   on-backprop
-   on-output
+   on-input-ready
+   on-output-ready
    outgoing
    output
    output-last
@@ -84,8 +85,11 @@
    weight-last
 
    ;; network attributes
+   max-error
+   cx-count
    input-layer
    inputs-ready-count
+   job-queue ;; also an attribute of neuron
    layers
    name
    neurons
@@ -99,7 +103,9 @@
    compute-cx-count
    compute-weights-random
    compute-weights-sinusoidal
+   eucledian-error
    output-errors
+   stop-threads
    wait-for-inputs
    wait-for-outputs
    ))
