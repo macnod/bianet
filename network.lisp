@@ -71,7 +71,6 @@
                  (thread-pool network))))
 
 (defmethod stop-threads ((network t-network))
-  ;; (dlog "stopping threads")
   (setf (running network) nil)
   (loop for thread-index from 1 to (* (thread-count network) 2)
         do (send-message (job-queue network) (car (neurons network)))
@@ -108,7 +107,8 @@
   (loop for layer in (butlast layers)
         for next-layer in (cdr layers)
         for cx-count = (* (length layer) (length next-layer))
-        for weights = (compute-weights-sinusoidal cx-count)
+        for weights = ;; (compute-weights-sinusoidal cx-count)
+        (compute-weights-random cx-count)
         do (loop for source in layer
                  do (loop for target in next-layer
                           do (connect source target
@@ -123,13 +123,9 @@
     with output-ready-callback = (lambda () 
                                    (sb-ext:atomic-incf 
                                        (car (outputs-ready-count network))))
-                                   ;; (dlog "incremented outputs-ready-count to ~d"
-                                   ;;       (car (outputs-ready-count network))))
     and input-ready-callback = (lambda ()
                                  (sb-ext:atomic-incf
                                      (car (inputs-ready-count network))))
-                                 ;; (dlog "incremented inputs-ready-count to ~d"
-                                 ;;       (car (inputs-ready-count network))))
     and layer-count = (length (topology network))
     for layer-neuron-count in (topology network)
     for layer-index = 0 then (1+ layer-index)
@@ -150,7 +146,6 @@
                             (= a layer-size))
           collect (cond
                     (is-output-layer
-                     ;; (dlog "Creating output-layer neuron")
                      (make-instance 't-neuron
                                     :transfer-key transfer-key
                                     :biased biased
@@ -158,7 +153,6 @@
                                     :job-queue (enqueue-job network)
                                     :on-output-ready output-ready-callback))
                     (is-input-layer
-                     ;; (dlog "Creating input-layer neuron")
                      (make-instance 't-neuron
                                     :transfer-key transfer-key
                                     :biased biased
@@ -166,7 +160,6 @@
                                     :job-queue (enqueue-job network)
                                     :on-input-ready input-ready-callback))
                     (t 
-                     ;; (dlog "Creating hidden-layer neuron")
                      (make-instance
                         't-neuron
                         :transfer-key transfer-key
@@ -175,7 +168,6 @@
                         :job-queue (enqueue-job network)))))))
 
 (defmethod make-simple-network ((network t-network))
-  ;; (dlog "network::make-simple-network")
   (let ((layers (connect-layers network (simple-network-layers network))))
     (values (reduce #'append layers)
             layers
@@ -194,9 +186,7 @@
                      collect (output neuron)))))
 
 (defmethod wait-for-outputs ((network t-network))
-  ;; (dlog "network::wait-for-outputs Waiting for outputs")
   (loop while (< (car (outputs-ready-count network)) (output-count network))))
-  ;; (dlog "network::wait-for-outputs Outputs ready"))
 
 (defmethod modulate ((network t-network) (expected-outputs list))
   (loop
@@ -209,7 +199,6 @@
     finally (wait-for-inputs network)))
 
 (defmethod wait-for-inputs ((network t-network))
-  ;; (dlog "Waiting for inputs")
   (loop while (< (car (inputs-ready-count network)) (input-count network))))
 
 (defmethod output-errors ((network t-network) (expected-outputs list))

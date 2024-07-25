@@ -82,12 +82,8 @@
  (reset-state)
  (let* (ff-complete
         bp-complete
-        (ff-callback (lambda (neuron)
-                       (declare (ignore neuron))
-                       (setf ff-complete t)))
-        (bp-callback (lambda (neuron)
-                       (declare (ignore neuron))
-                       (setf bp-complete t)))
+        (ff-callback (lambda () (setf ff-complete t)))
+        (bp-callback (lambda () (setf bp-complete t)))
         (neuron (make-instance 't-neuron
                                :transfer-key :relu
                                :on-output-ready ff-callback
@@ -122,7 +118,7 @@
    (ok (mailbox-empty-p (e-mailbox neuron))
        "Neuron's e-mailbox is empty")
    (ok ff-complete "ff-complete set")
-   (ok (zerop (err-in neuron)) "error-in is zero")
+   (ok (zerop (err-in neuron)) "err-in is zero")
    (ok (zerop (err neuron)) "err is zero")
    (ok (null (modulated neuron)) "modulated is zero")
    (ok (zerop (modulation-count neuron)) "modulation-count is zero")
@@ -156,12 +152,8 @@
  (reset-state)
  (let* (output-ready
         backprop-complete
-        (output-ready-callback (lambda (neuron)
-                                 (declare (ignore neuron))
-                                 (setf output-ready t)))
-        (backprop-complete-callback (lambda (neuron)
-                                      (declare (ignore neuron))
-                                      (setf backprop-complete t)))
+        (output-ready-callback (lambda () (setf output-ready t)))
+        (backprop-complete-callback (lambda () (setf backprop-complete t)))
         (neuron-1 (make-instance 't-neuron
                                  :transfer-key :relu
                                  :on-input-ready backprop-complete-callback))
@@ -221,12 +213,8 @@
  "Two connected neurons, thread pool with 2 threads"
  (let* (ff-complete
         bp-complete
-        (ff-complete-callback (lambda (neuron)
-                                (declare (ignore neuron))
-                                (setf ff-complete t)))
-        (bp-complete-callback (lambda (neuron)
-                                (declare (ignore neuron))
-                                (setf bp-complete t)))
+        (ff-complete-callback (lambda () (setf ff-complete t)))
+        (bp-complete-callback (lambda () (setf bp-complete t)))
         (neuron-1 (make-instance 't-neuron
                                  :transfer-key :relu
                                  :on-input-ready bp-complete-callback))
@@ -248,7 +236,7 @@
    (setf ff-complete nil)
    (is (excite neuron-1 1.0) 1.0 "excited neuron-1 with 1.0")
    (loop until ff-complete)
-   (is-approx (output neuron-2) 0.5 
+   (is-approx (output neuron-2) 0.5
               "output of neuron-2 is ~f" (output neuron-2))
    (setf (running neuron-1) nil)
    (setf (running neuron-2) nil)

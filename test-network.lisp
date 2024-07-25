@@ -1,4 +1,6 @@
 (in-package :cl-user)
+(ql:quickload :yason)
+(ql:quickload :cl-csv)
 (require :dc-dlist)
 (require :dc-eclectic)
 (require :bianet)
@@ -79,18 +81,18 @@
  (loop 
    with net = (make-instance 't-network 
                              :name "test-1" 
-                             :topology '(2 64 32 16 10)
-                             :thread-count 1)
+                             :topology '(10 128 64 32 10)
+                             :thread-count 6)
    with log-1 = (progn 
                   (pass (format nil "Total neurons: ~d" (length (neurons net))))
                   (pass (format nil "Total connections: ~d" (cx-count net))))
    with output-count = (length (output-layer net))
    and input-count = (length (input-layer net))
    and max-iterations = 5000
-   and training-set = '(((0 0) (0 0 0 0 0 0 0 0 0 0))
-                        ((0 1) (0 0 0 0 0 0 0 0 0 1))
-                        ((1 0) (0 0 0 0 0 0 0 0 0 1))
-                        ((1 1) (0 0 0 0 0 0 0 0 0 0)))
+   and training-set = '(((0 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 0))
+                        ((0 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 1))
+                        ((1 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 1))
+                        ((1 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 0)))
    and target-error = 0.05
    and report-frequency = 100
    and start-time = (mark-time)

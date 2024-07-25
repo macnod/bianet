@@ -39,8 +39,8 @@
 
 (defun next-weight ()
   (with-mutex (*weight-mutex*)
-    (let ((min -0.3)
-          (max 0.3))
+    (let ((min -0.5)
+          (max 0.5))
       (+ min (random (- max min) *bianet-random-state*)))))
 
 (defun reset-random-state ()
@@ -157,17 +157,9 @@
     (unless (biased neuron)
       (setf (input neuron) 0.0))
     (incf (transfer-count neuron))
-    ;; (when *debug*
-    ;;   (dlog "neuron::transfer ~a input (~,3f) to output (~,3f)"
-    ;;         (id neuron)
-    ;;         (input-last neuron)
-    ;;         (output neuron)))
     (output neuron)))
 
 (defmethod fire-output ((neuron t-neuron))
-  ;; (dlog "neuron::fire-output ~a firing (~,3f)"
-  ;;       (id neuron)
-  ;;       (output neuron))
   (loop for cx-node = (head (outgoing neuron)) then (next cx-node)
         while cx-node
         for cx = (value cx-node)
@@ -224,46 +216,30 @@
 
 (defmethod process ((neuron t-neuron))
   (with-mutex ((process-mutex neuron))
-    (dlog "neuron::process ~a" (name neuron))
     (evaluate-input-messages neuron)
     (evaluate-error-messages neuron)
     (when (excited neuron)
-      ;; (dlog "neuron::process excited ~a with ~,3f" 
-      ;;       (name neuron) (input neuron))
       (transfer neuron)
       (fire-output neuron)
       (incf (ff-count neuron))
       (setf (excited neuron) nil)
       (setf (excitation-count neuron) 0)
-      ;; (dlog "neuron::process neuron ~a on-output-ready=~a" 
-      ;;       (name neuron)
-      ;;       (when (on-output-ready neuron) t))
       (when (on-output-ready neuron) 
-        ;; (dlog "neuron::process calling on-output-ready")
         (funcall (on-output-ready neuron))))
     (when (modulated neuron)
-      ;; (dlog "neuron::process Modulated ~a with ~,3f" 
-      ;;       (name neuron) (err-in neuron))
       (transfer-error neuron)
       (fire-error neuron)
       (adjust-weights neuron)
       (incf (bp-count neuron))
       (setf (modulated neuron) nil)
       (setf (modulation-count neuron) 0)
-      ;; (dlog "neuron::process neuron ~a on-input-ready=~a" 
-      ;;       (name neuron)
-      ;;       (when (on-input-ready neuron) t))
-      (when (on-input-ready neuron) 
-        ;; (dlog "neuron::process calling on-input-ready")
+      (when (on-input-ready neuron)
         (funcall (on-input-ready neuron))))
     (incf (process-count neuron))))
 
 (defmethod evaluate-input-messages ((neuron t-neuron))
   (loop until (mailbox-empty-p (i-mailbox neuron))
         for value = (receive-message (i-mailbox neuron))
-        ;; for log = (dlog "neuron::evaluate-input-messages ~a received ~,3f"
-        ;;                 (name neuron)
-        ;;                 value)
         do (excite-internal neuron value)))
 
 (defmethod evaluate-error-messages ((neuron t-neuron))
@@ -272,39 +248,30 @@
         do (modulate-internal neuron err)))
 
 (defmethod excite-internal ((neuron t-neuron) value)
-  ;; (dlog "neuron::excite-internal ~a with ~,3f"
-  ;;       (name neuron)
-  ;;       value)
   (unless (biased neuron)
     (incf (input neuron) value))
   (incf (excitation-count neuron))
   (when (or (zerop (len (incoming neuron)))
             (= (excitation-count neuron) (len (incoming neuron))))
-    ;; (dlog "neuron::excite-internal Setting ~a to excited" (name neuron))
     (setf (excited neuron) t)))
 
 (defmethod excite ((neuron t-neuron) value)
   (send-message (i-mailbox neuron) value)
-  (funcall (job-queue neuron) neuron)
-  (dlog "neuron::excite ~a with ~,3f, pushing to job-queue"
-        (name neuron) value)
+  (when (job-queue neuron)
+    (funcall (job-queue neuron) neuron))
   value)
 
 (defmethod modulate-internal ((neuron t-neuron) err)
-  ;; (dlog "neuron::modulate-internal ~a with ~,3f" (name neuron) err)
   (incf (err-in neuron) err)
   (incf (modulation-count neuron))
-  ;; (dlog "neuron::modulate-internal ~a modulation-count incremented to ~d"
-  ;;       (name neuron) (modulation-count neuron))
   (when (or (zerop (len (outgoing neuron)))
             (= (modulation-count neuron) (modulator-count neuron)))
     (setf (modulated neuron) t)))
 
 (defmethod modulate ((neuron t-neuron) err)
   (send-message (e-mailbox neuron) err)
-  (funcall (job-queue neuron) neuron)
-  ;; (dlog "neuron::modulate ~a with ~,3f, pushing to job-queue"
-  ;;       (name neuron) err)
+  (when (job-queue neuron)
+    (funcall (job-queue neuron) neuron))
   err)
 
 (defmethod connect ((source t-neuron)
