@@ -81,7 +81,7 @@
  (loop 
    with net = (make-instance 't-network 
                              :name "test-1" 
-                             :topology '(10 128 64 32 10)
+                             :topology '(10 16 8 8 10)
                              :thread-count 6)
    with log-1 = (progn 
                   (pass (format nil "Total neurons: ~d" (length (neurons net))))
