@@ -1,5 +1,6 @@
 (defpackage :bianet
-  (:use :cl :sb-concurrency :sb-thread :cl-ppcre :dc-eclectic :dc-dlist)
+  (:use :cl :sb-concurrency :sb-thread :cl-ppcre :dc-eclectic)
+  (:local-nicknames (:dl :dc-dlist))
   (:export
    ;; neuron methods
    adjust-weight

@@ -117,8 +117,8 @@
    (modulator-count :accessor modulator-count :type integer :initform 0)
    (excited :accessor excited :type boolean :initform nil)
    (modulated :accessor modulated :type boolean :initform nil)
-   (incoming :accessor incoming :type dlist :initform (make-instance 'dlist))
-   (outgoing :accessor outgoing :type dlist :initform (make-instance 'dlist))
+   (incoming :accessor incoming :type dl:dlist :initform (make-instance 'dl:dlist))
+   (outgoing :accessor outgoing :type dl:dlist :initform (make-instance 'dl:dlist))
    (ff-count :accessor ff-count :type integer :initform 0)
    (bp-count :accessor bp-count :type integer :initform 0)
    (on-input-ready :accessor on-input-ready
@@ -160,9 +160,9 @@
     (output neuron)))
 
 (defmethod fire-output ((neuron t-neuron))
-  (loop for cx-node = (head (outgoing neuron)) then (next cx-node)
+  (loop for cx-node = (dl:head (outgoing neuron)) then (dl:next cx-node)
         while cx-node
-        for cx = (value cx-node)
+        for cx = (dl:value cx-node)
         for target = (target cx)
         do (excite target (* (output neuron) (weight cx)))
            (incf (fire-count cx))))
@@ -177,18 +177,18 @@
 
 (defmethod fire-error ((neuron t-neuron))
   (unless (biased neuron)
-    (loop for cx-node = (head (incoming neuron)) then (next cx-node)
+    (loop for cx-node = (dl:head (incoming neuron)) then (dl:next cx-node)
           while cx-node
-          for cx = (value cx-node)
+          for cx = (dl:value cx-node)
           for upstream-neuron = (source cx)
           for weight = (weight cx)
           for err = (err neuron)
           do (modulate upstream-neuron (* err weight)))))
 
 (defmethod adjust-weights ((neuron t-neuron))
-  (loop for cx-node = (head (outgoing neuron)) then (next cx-node)
+  (loop for cx-node = (dl:head (outgoing neuron)) then (dl:next cx-node)
         while cx-node
-        for cx = (value cx-node)
+        for cx = (dl:value cx-node)
         do (adjust-weight cx)))
 
 (defmethod adjust-weight ((cx t-cx))
@@ -251,8 +251,8 @@
   (unless (biased neuron)
     (incf (input neuron) value))
   (incf (excitation-count neuron))
-  (when (or (zerop (len (incoming neuron)))
-            (= (excitation-count neuron) (len (incoming neuron))))
+  (when (or (zerop (dl:len (incoming neuron)))
+            (= (excitation-count neuron) (dl:len (incoming neuron))))
     (setf (excited neuron) t)))
 
 (defmethod excite ((neuron t-neuron) value)
@@ -264,7 +264,7 @@
 (defmethod modulate-internal ((neuron t-neuron) err)
   (incf (err-in neuron) err)
   (incf (modulation-count neuron))
-  (when (or (zerop (len (outgoing neuron)))
+  (when (or (zerop (dl:len (outgoing neuron)))
             (= (modulation-count neuron) (modulator-count neuron)))
     (setf (modulated neuron) t)))
 
@@ -282,15 +282,15 @@
                       (momentum *default-momentum*))
   (when (and
          (loop
-           for cx-node = (head (outgoing source)) then (next cx-node)
+           for cx-node = (dl:head (outgoing source)) then (dl:next cx-node)
            while cx-node
-           for cx = (value cx-node)
+           for cx = (dl:value cx-node)
            for cx-target = (target cx)
            never (= (id target) (id cx-target)))
          (loop
-           for cx-node = (head (incoming target)) then (next cx-node)
+           for cx-node = (dl:head (incoming target)) then (dl:next cx-node)
            while cx-node
-           for cx = (value cx-node)
+           for cx = (dl:value cx-node)
            for cx-source = (source cx)
            never (= (id source) (id cx-source))))
     (let ((cx (make-instance 't-cx
@@ -299,46 +299,46 @@
                              :weight weight
                              :source source
                              :target target)))
-      (push-tail (outgoing source) cx)
-      (push-tail (incoming target) cx)
+      (dl:push-tail (outgoing source) cx)
+      (dl:push-tail (incoming target) cx)
       (unless (biased target)
         (incf (modulator-count source)))
       cx)))
 
 (defmethod disconnect ((source t-neuron) (target t-neuron))
-  (loop for cx-node = (head (outgoing source)) then (next cx-node)
+  (loop for cx-node = (dl:head (outgoing source)) then (dl:next cx-node)
         while cx-node
-        for cx = (value cx-node)
+        for cx = (dl:value cx-node)
         for cx-target = (target cx)
         when (= (id target) (id cx-target))
-          do (delete-node (outgoing source) cx-node))
-  (loop for cx-node = (head (incoming target)) then (next cx-node)
+          do (dl:delete-node (outgoing source) cx-node))
+  (loop for cx-node = (dl:head (incoming target)) then (dl:next cx-node)
         while cx-node
-        for cx = (value cx-node)
+        for cx = (dl:value cx-node)
         for cx-source = (source cx)
         when (= (id source) (id cx-source))
-          do (delete-node (incoming target) cx-node)
+          do (dl:delete-node (incoming target) cx-node)
              (return cx)))
 
 (defmethod isolate ((neuron t-neuron))
   (let ((source (loop
-                  for cx-node = (head (incoming neuron)) then (next cx-node)
+                  for cx-node = (dl:head (incoming neuron)) then (dl:next cx-node)
                   while cx-node
-                  for cx = (value cx-node)
+                  for cx = (dl:value cx-node)
                   for source = (source cx)
                   do (disconnect source neuron)
                   counting cx))
         (target (loop
-                  for cx-node = (head (outgoing neuron)) then (next cx-node)
+                  for cx-node = (dl:head (outgoing neuron)) then (dl:next cx-node)
                   while cx-node
-                  for cx = (value cx-node)
+                  for cx = (dl:value cx-node)
                   for target = (target cx)
                   do (disconnect neuron target)
                   counting cx)))
     (list :incoming source :outgoing target)))
 
 (defmethod list-incoming ((neuron t-neuron))
-  (to-list (incoming neuron)))
+  (dl:to-list (incoming neuron)))
 
 (defmethod list-incoming ((neurons list))
   (reduce #'append (mapcar #'list-incoming neurons)))
@@ -352,7 +352,7 @@
           (list-incoming neuron)))
 
 (defmethod list-outgoing ((neuron t-neuron))
-  (to-list (outgoing neuron)))
+  (dl:to-list (outgoing neuron)))
 
 (defmethod list-outgoing ((neurons list))
   (reduce #'append (mapcar #'list-outgoing neurons)))
