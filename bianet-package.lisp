@@ -1,5 +1,5 @@
 (defpackage :bianet
-  (:use :cl :sb-concurrency :sb-thread :cl-ppcre)
+  (:use :cl :sb-concurrency :sb-thread)
   (:local-nicknames (:dl :dc-dlist)
                     (:u :dc-eclectic))
   (:export
