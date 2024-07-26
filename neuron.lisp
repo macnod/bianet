@@ -11,7 +11,7 @@
 (defparameter *default-learning-rate* 0.1)
 (defparameter *default-momentum* 0.3)
 
-(defparameter *bianet-random-state* (make-random-state (reference-random-state)))
+(defparameter *bianet-random-state* (make-random-state (u:reference-random-state)))
 
 (defparameter *debug* t)
 
@@ -44,7 +44,7 @@
       (+ min (random (- max min) *bianet-random-state*)))))
 
 (defun reset-random-state ()
-  (setf *bianet-random-state* (make-random-state (reference-random-state))))
+  (setf *bianet-random-state* (make-random-state (u:reference-random-state))))
 
 (defun reset-state ()
   (reset-ids)
