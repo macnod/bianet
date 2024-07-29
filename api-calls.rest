@@ -1,0 +1,17 @@
+# Create network
+POST http://localhost:3001/api/create-net
+
+{
+  "name": "test-a",
+  "topology": [2, 8, 4, 1],
+  "thread-count": 1
+}
+
+# Get network's neurons
+GET http://localhost:3001/api/neurons?page-size=5
+
+# Get network's connections
+GET http://localhost:3001/api/connections?page-size=100
+
+# Delete network
+POST http://localhost:3001/api/delete-net

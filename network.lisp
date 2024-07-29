@@ -35,6 +35,7 @@
       (make-simple-network network)
     (setf (neurons network) neurons
           (layers network) layers
+          (topology network) (mapcar #'length layers)
           (input-layer network) input-layer
           (output-layer network) output-layer
           (input-count network) (length input-layer)
@@ -229,4 +230,3 @@
   (sqrt
    (reduce #'+ (mapcar (lambda (x) (* x x))
                        (output-errors outputs expected-outputs)))))
-                   

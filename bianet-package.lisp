@@ -1,7 +1,9 @@
 (defpackage :bianet
   (:use :cl :sb-concurrency :sb-thread)
   (:local-nicknames (:dl :dc-dlist)
-                    (:u :dc-eclectic))
+                    (:u :dc-eclectic)
+                    (:h :hunchentoot)
+                    (:y :yason))
   (:export
    ;; neuron methods
    adjust-weight
@@ -110,4 +112,8 @@
    stop-threads
    wait-for-inputs
    wait-for-outputs
+
+   ;; api functions
+   rest-service-start
+   rest-service-stop
    ))
