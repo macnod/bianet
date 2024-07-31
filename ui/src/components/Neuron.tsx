@@ -6,4 +6,6 @@ export interface Neuron {
   input: number;
   output: number;
   err: number;
+  incoming: number;
+  outgoing: number;
 }

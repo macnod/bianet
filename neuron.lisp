@@ -117,8 +117,10 @@
    (modulator-count :accessor modulator-count :type integer :initform 0)
    (excited :accessor excited :type boolean :initform nil)
    (modulated :accessor modulated :type boolean :initform nil)
-   (incoming :accessor incoming :type dl:dlist :initform (make-instance 'dl:dlist))
-   (outgoing :accessor outgoing :type dl:dlist :initform (make-instance 'dl:dlist))
+   (incoming :accessor incoming :type dl:dlist 
+             :initform (make-instance 'dl:dlist))
+   (outgoing :accessor outgoing :type dl:dlist 
+             :initform (make-instance 'dl:dlist))
    (ff-count :accessor ff-count :type integer :initform 0)
    (bp-count :accessor bp-count :type integer :initform 0)
    (on-input-ready :accessor on-input-ready

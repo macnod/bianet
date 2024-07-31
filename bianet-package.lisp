@@ -3,7 +3,8 @@
   (:local-nicknames (:dl :dc-dlist)
                     (:u :dc-eclectic)
                     (:h :hunchentoot)
-                    (:y :yason))
+                    (:y :yason)
+                    (:ds :dc-ds))
   (:export
    ;; neuron methods
    adjust-weight

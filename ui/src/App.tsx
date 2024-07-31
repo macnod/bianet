@@ -1,5 +1,4 @@
-import { React, useState } from 'react';
-import { render } from 'react-dom';
+import { SyntheticEvent, useState } from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -30,7 +29,7 @@ const Page = styled.div`
 
 function App() {
   const [value, setValue] = useState(0);
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 

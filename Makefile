@@ -23,7 +23,7 @@ test-api:
 		--eval "(prove:run #P\"$(TEST_API_FILE)\" :reporter :$(REPORTER))" \
 	  --non-interactive
 
-test:	test-neuron	test-network
+test:	test-neuron	test-network test-api
 
 # work:
 # 	$(LISP) --eval "(ql:quickload :prove)" \

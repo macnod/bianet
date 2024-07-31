@@ -4,7 +4,7 @@ POST http://localhost:3001/api/create-net
 {
   "name": "test-a",
   "topology": [2, 8, 4, 1],
-  "thread-count": 1
+  "thread_count": 1
 }
 
 # Get network's neurons

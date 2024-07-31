@@ -1,8 +1,12 @@
 (in-package :bianet)
 
+(defparameter *max-thread-count*
+  (cl-cpus:get-number-of-processors))
+
 (defparameter *default-thread-count*
-  (let ((count (cl-cpus:get-number-of-processors)))
-    (if (< count 3) count (/ count 2))))
+    (if (< *max-thread-count* 3)
+        *max-thread-count*
+        (/ *max-thread-count* 2)))
 
 (defclass t-network ()
   ((name :reader name :initarg :name :type string 

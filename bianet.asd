@@ -7,6 +7,7 @@
                :cl-ppcre 
                :dc-eclectic
                :dc-dlist
+               :dc-ds
                :hunchentoot
                :yason
                :cl-ppcre)

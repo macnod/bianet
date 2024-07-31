@@ -86,7 +86,6 @@
    with log-1 = (progn 
                   (pass (format nil "Total neurons: ~d" (length (neurons net))))
                   (pass (format nil "Total connections: ~d" (cx-count net))))
-   with output-count = (length (output-layer net))
    and input-count = (length (input-layer net))
    and max-iterations = 5000
    and training-set = '(((0 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 0))
@@ -115,11 +114,16 @@
    finally 
       (let ((elapsed (elapsed-time start-time)))
         (loop for (inputs expected-outputs) in training-set
+              for index = 1 then (1+ index)
               for outputs = (excite net inputs)
               for err-dist = (eucledian-error outputs expected-outputs)
               do (is-f (< err-dist 0.05) t
-                       "(~{~a~^, ~}) -> (~{~a~^, ~}); expected=(~{~a~^, ~}); error=~,3f"
-                       inputs outputs expected-outputs err-dist)
+                       "~a ~d~%~a(~{~a~^ ~})~%~a(~{~a~^ ~})~%~a(~{~a~^ ~})~%~a~,3f"
+                       "vector" index
+                       "  inputs: " inputs
+                       " outputs: " (mapcar #'round-3 outputs)
+                       "expected: " expected-outputs
+                       "   error: " err-dist)
               finally
                  (stop-threads net))
         (pass (format nil "Completed training in ~d iterations and ~,3f seconds"
