@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import GraphPanelNetworkSummary from "./GraphPanelNetworkSummary.tsx";
 import GraphPanelSelectedNeuron from "./GraphPanelSelectedNeuron.tsx";

@@ -1,3 +1,4 @@
+import React from 'react';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
 import { Neuron } from "./Neuron.tsx";
 import "@silevis/reactgrid/styles.css";

@@ -1,3 +1,4 @@
+import React from 'react';
 import useSWR from 'swr';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
 

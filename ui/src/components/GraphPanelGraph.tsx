@@ -1,3 +1,4 @@
+import React from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import useSWR from 'swr';
 import { Neuron } from "./Neuron.tsx"
@@ -104,8 +105,8 @@ function GraphPanelGraph(props:GPGProps) {
     neuronData.result.neurons, 
     cxData.result.connections);
   const roots = neuronData.result.neurons
-    .filter(neuron => neuron.layer === 0)
-    .map(neuron => neuron.name);
+    .filter((neuron:Neuron) => neuron.layer === 0)
+    .map((neuron:Neuron) => neuron.name);
   return (
     <CytoscapeComponent
       cy={
