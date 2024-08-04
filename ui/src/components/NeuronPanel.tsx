@@ -57,7 +57,7 @@ function NeuronPanel() {
     data,
     error,
     isValidating
-  } = useSWR('http://localhost:3001/api/neurons', fetcher);
+  } = useSWR('http://localhost:3001/api/neurons?page-size=1000', fetcher);
   if (error)
     return <div className="failed">Failed to load</div>;
   if (isValidating) return <div className="Loading">Loading...</div>;

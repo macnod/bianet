@@ -71,3 +71,22 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.graphpanel-container {
+    border: 1px solid "white";
+    padding: 20px;
+}
+
+.graphpanel-selection {
+    width: "10%";
+    float: left;
+    padding: 20px;
+    boder: 1px solid "white";
+}
+
+.graphpanel-graph {
+    width: "100px";
+    float: left;
+    padding: 20px;
+    border: 1px solid "white";
+}  

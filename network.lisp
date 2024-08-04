@@ -8,6 +8,8 @@
         *max-thread-count*
         (/ *max-thread-count* 2)))
 
+(defparameter *training-log-size* 10000)
+
 (defclass t-network ()
   ((name :reader name :initarg :name :type string 
          :initform (error "name is required"))
@@ -31,8 +33,17 @@
                 :initform nil)
    (job-set :accessor job-set :type hash-table :initform (make-hash-table))
    (job-set-mutex :accessor job-set-mutex :type mutex
-                  :initform (make-mutex :name "job-set-mutex"))
-   (job-queue :accessor job-queue :type mailbox :initform (make-mailbox))))
+                  :initform (make-mutex :name "bianet-job-set"))
+   (job-queue :accessor job-queue :type mailbox :initform (make-mailbox))
+   (training :accessor training :type boolean :initform nil)
+   (training-mutex :accessor training-mutex :type mutex
+                   :initform (make-mutex :name "bianet-training"))
+   (training-log :accessor training-log :type dl:dlist
+                 :initform (make-instance 'dl:dlist))
+   (training-log-mutex :accessor training-log-mutex :type mutex
+                       :initform (make-mutex :name "training-log"))
+   (max-weight :accessor max-weight :type float :initform 0.0)
+   (min-weight :accessor min-weight :type float :initform 0.0)))
 
 (defmethod initialize-instance :after ((network t-network) &key)
   (multiple-value-bind (neurons layers input-layer output-layer)
@@ -44,7 +55,23 @@
           (output-layer network) output-layer
           (input-count network) (length input-layer)
           (output-count network) (length output-layer))
+    (find-weight-extremes network)
     (start-threads network)))
+
+(defmethod add-training-error ((network t-network) 
+                               (network-error float)
+                               (total-elapsed-time float)
+                               (iteration integer)
+                               (iteration-elapsed-time float))
+  (with-mutex ((training-log-mutex network))
+    (dl:push-tail (training-log network)
+                  (list network-error
+                        total-elapsed-time
+                        iteration 
+                        iteration-elapsed-time))
+    (when (> (dl:len (training-log network)) *training-log-size*)
+      (dl:pop-head (training-log network))))
+  network-error)
 
 (defmethod dequeue-job ((network t-network))
   (let ((neuron (receive-message (job-queue network) :timeout 0.1)))
@@ -71,7 +98,8 @@
 
 (defmethod start-threads ((network t-network))
   (loop for index from 1 to (thread-count network)
-        for thread-name = (format nil "~a-thread-~3,'0d" (name network) index)
+        for thread-name = (format nil "bianet-~a-thread-~3,'0d" 
+                                  (name network) index)
         do (push (make-thread (thread-work network) :name thread-name)
                  (thread-pool network))))
 
@@ -79,8 +107,13 @@
   (setf (running network) nil)
   (loop for thread-index from 1 to (* (thread-count network) 2)
         do (send-message (job-queue network) (car (neurons network)))
-        finally (loop for thread in (thread-pool network) 
+        finally (loop for thread in (thread-pool network)
                       do (join-thread thread))))
+
+(defun terminate-all-bianet-threads ()
+  (loop for thread in (list-all-threads)
+        when (ppcre:scan "^bianet-" (thread-name thread))
+          do (terminate-thread thread)))
 
 (defun make-groups (group-count original-list)
   (loop with groups = (loop for a from 1 to group-count collect nil)
@@ -201,7 +234,9 @@
     for output = (output neuron)
     for error = (- expected-output output)
     do (modulate neuron error)
-    finally (wait-for-inputs network)))
+    summing (* error error) into errors
+    finally (wait-for-inputs network)
+            (return (sqrt errors))))
 
 (defmethod wait-for-inputs ((network t-network))
   (loop while (< (car (inputs-ready-count network)) (input-count network))))
@@ -234,3 +269,79 @@
   (sqrt
    (reduce #'+ (mapcar (lambda (x) (* x x))
                        (output-errors outputs expected-outputs)))))
+
+(defmethod propagate-frames ((network t-network) (frames list))
+  (loop for (inputs expected-outputs) in frames
+        for outputs = (excite network inputs)
+        for error = (modulate network expected-outputs)
+        for max-error = error then (if (> error max-error) error max-error)
+        finally (return max-error)))
+
+(defmethod train ((network t-network)
+                  (target-error float)
+                  (max-iterations integer)
+                  (training-set list)
+                  (update-frequency integer)
+                  (update-callback function))
+  (if (with-mutex ((training-mutex network)) (training network))
+      :fail-already-training
+      (progn
+        (with-mutex ((training-mutex network)) (setf (training network) t))
+        (dl:clear (training-log network))
+        (values
+         :success-training-started
+         (make-thread
+          (lambda ()
+            (loop
+              with start-time = (u:mark-time)
+              for iteration from 1 to max-iterations
+              for iteration-start-time = (u:mark-time)
+              for network-error = (propagate-frames network training-set)
+              while (> network-error target-error)
+              when (zerop (mod iteration update-frequency))
+                do (let ((total-time (u:elapsed-time start-time))
+                         (iteration-time (u:elapsed-time iteration-start-time)))
+                     (add-training-error
+                      network 
+                      network-error
+                      total-time
+                      iteration
+                      iteration-time)
+                     (when update-callback
+                       (funcall update-callback 
+                                network-error iteration total-time)))
+              finally
+                 (let ((total-time (u:elapsed-time start-time))
+                       (iteration-time (u:elapsed-time iteration-start-time)))
+                   (find-weight-extremes network)
+                   (add-training-error
+                    network
+                    network-error
+                    total-time
+                    iteration
+                    iteration-time)
+                   (with-mutex ((training-mutex network))
+                     (setf (training network) nil))
+                   (when update-callback
+                     (funcall update-callback network-error iteration total-time)))))
+          :name (format nil "bianet-~a-training" (name network)))))))
+
+(defmethod clear-weights ((network t-network))
+  (loop initially (reset-random-state)
+    for cx in (list-outgoing (neurons network))
+        do (setf (weight cx) (next-weight)
+                 (delta cx) 0.0)
+           finally (find-weight-extremes network)))
+
+(defmethod wait-for-training ((network t-network))
+  (loop while (with-mutex ((training-mutex network)) (training network))
+        do (sleep 0.1)
+        finally (return (dl:peek-tail (training-log network)))))
+
+(defmethod find-weight-extremes ((network t-network))
+  (let ((weights (mapcar #'weight (list-outgoing (neurons network)))))
+    (setf (min-weight network) (reduce (lambda (a b) (if (< a b) a b)) 
+                                       weights)
+          (max-weight network) (reduce (lambda (a b) (if (> a b) a b))
+                                       weights))))
+  

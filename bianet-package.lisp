@@ -111,8 +111,12 @@
    eucledian-error
    output-errors
    stop-threads
+   train
+   training
+   training-log
    wait-for-inputs
    wait-for-outputs
+   wait-for-training
 
    ;; api functions
    rest-service-start

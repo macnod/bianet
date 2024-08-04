@@ -76,57 +76,52 @@
                          "...and derivative function biased-derivative"))))))
 
 (subtest
- "Train a simple, 6-layer network with XOR"
- ;; (open-log :append nil)
- (loop 
-   with net = (make-instance 't-network 
-                             :name "test-1" 
+    "Train a simple, 5-layer network with XOR"
+  (let* ((net (make-instance 't-network
+                             :name "bravo-test"
                              :topology '(10 16 8 8 10)
-                             :thread-count 6)
-   with log-1 = (progn 
-                  (pass (format nil "Total neurons: ~d" (length (neurons net))))
-                  (pass (format nil "Total connections: ~d" (cx-count net))))
-   and input-count = (length (input-layer net))
-   and max-iterations = 5000
-   and training-set = '(((0 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 0))
-                        ((0 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 1))
-                        ((1 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 1))
-                        ((1 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 0)))
-   and target-error = 0.05
-   and report-frequency = 100
-   and start-time = (mark-time)
-   for iteration from 1 to max-iterations
-   for last-iteration-start-time = (mark-time) then iteration-start-time
-   for iteration-start-time = (mark-time)
-   for current-error = (when (zerop (mod iteration report-frequency))
-                         (let ((elapsed (elapsed-time last-iteration-start-time))
-                               (e (max-error net training-set)))
-                           (pass 
-                            (format 
-                             nil
-                             "training iteration ~d: error=~,3f; time=~,3fs"
-                             iteration e elapsed))
-                           e))
-   while (or (null current-error) (> current-error target-error))
-   do (loop for (inputs expected-outputs) in training-set
+                             :thread-count 4))
+         (max-iterations 5000)
+         (training-set '(((0 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 0))
+                         ((0 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 1))
+                         ((1 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 1))
+                         ((1 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 0))))
+         (target-error 0.05)
+         (report-frequency 100)
+         (reports-stack nil)
+         (update-callback (lambda (e i time) 
+                            (push (list e i time) reports-stack))))
+    (train net target-error max-iterations 
+           training-set report-frequency update-callback)
+    (let ((training-result (wait-for-training net))
+          (reports (reverse reports-stack)))
+      (ok (> (length reports) 2) "received reports during training")
+      (ok (loop for report in (butlast reports)
+                for next-report in (cdr reports)
+                always (and (< (nth 1 report) (nth 1 next-report))
+                            (< (nth 2 report) (nth 2 next-report))))
+          "reports exhibit expected progression")
+      (is (nth 0 training-result) (car (car (last reports)))
+          "final network error corresponds to network error in last report")
+      (ok (<= (nth 0 training-result) target-error)
+          (format nil "network error (~f) is at or below target error (~f)"
+                  (nth 0 training-result) target-error))
+      (ok (<= (nth 2 training-result) max-iterations)
+          "number of training iterations is smaller than max-iterations")
+      (loop for (inputs expected-outputs) in training-set
             for outputs = (excite net inputs)
-            do (modulate net expected-outputs))
-   finally 
-      (let ((elapsed (elapsed-time start-time)))
-        (loop for (inputs expected-outputs) in training-set
-              for index = 1 then (1+ index)
-              for outputs = (excite net inputs)
-              for err-dist = (eucledian-error outputs expected-outputs)
-              do (is-f (< err-dist 0.05) t
-                       "~a ~d~%~a(~{~a~^ ~})~%~a(~{~a~^ ~})~%~a(~{~a~^ ~})~%~a~,3f"
-                       "vector" index
-                       "  inputs: " inputs
-                       " outputs: " (mapcar #'round-3 outputs)
-                       "expected: " expected-outputs
-                       "   error: " err-dist)
-              finally
-                 (stop-threads net))
-        (pass (format nil "Completed training in ~d iterations and ~,3f seconds"
-                      iteration elapsed)))))
-
+            do (ok (loop for output in outputs
+                         for expected-output in expected-outputs
+                         always (< (abs (- expected-output output)) 0.1))
+                   (format nil "inference for (~,3f ~,3f) is correct (~,3f)"
+                           (car inputs) 
+                           (car (last inputs)) 
+                           (car (last outputs)))))
+      (ok (<= (nth 1 training-result) 10)
+          (format nil "training time (~,3f seconds) is less than 10 seconds"
+                  (nth 1 training-result))))
+    (stop-threads net)))
+    
+  
+           
 (finalize)

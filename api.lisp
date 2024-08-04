@@ -90,9 +90,9 @@
                               key items))))
 
 (defun encoded-network-item-list 
-    (key list-function plists-function page page-size)
+    (key list-function filter plists-function page page-size)
   (if *net*
-      (let* ((list (funcall list-function))
+      (let* ((list (remove-if-not filter (funcall list-function)))
              (data (select-page key list page page-size)))
         (encode (list :status "ok"
                       :result (list :total_size (getf data :total-size)
@@ -227,6 +227,43 @@
                                  :thread-count thread-count))
             (encode (list :status "ok"
                           :result (network-plist *net*))))))))
+
+(h:define-easy-handler (api-net-info :uri "/api/net")
+    ()
+  (setf (h:content-type*) "application/json")
+  (setf (h:header-out "Access-Control-Allow-Origin") "*")
+  (if *net*
+      (let* ((training-log-entry (car (last (dl:to-list (training-log *net*)))))
+             (network-error (nth 0 training-log-entry))
+             (training-time (nth 1 training-log-entry))
+             (iterations (nth 2 training-log-entry)))
+        (encode (list 
+                 :status "ok"
+                 :result (list
+                          :name (name *net*)
+                          :topology (map 'vector 'identity (topology *net*))
+                          :thread_count (thread-count *net*)
+                          :running (if (running *net*) t y:false)
+                          :training (with-mutex ((training-mutex *net*))
+                                      (if (training *net*) t y:false))
+                          :network_error network-error
+                          :training_time training-time
+                          :iterations iterations
+                          :max_weight (max-weight *net*)
+                          :min_weight (min-weight *net*)))))
+      (encode (list
+               :status "ok"
+               :result (list 
+                        :name ""
+                        :topology (vector)
+                        :thread_count 0
+                        :running nil
+                        :training nil
+                        :network_error nil
+                        :training_time nil
+                        :iterations nil
+                        :max-weight nil
+                        :min-weight nil)))))
     
 (h:define-easy-handler (api-delete-net :uri "/api/delete-net"
                                        :default-request-type :post)
@@ -242,22 +279,33 @@
 
 (h:define-easy-handler (api-get-neurons :uri "/api/neurons")
     ((page :parameter-type 'integer :init-form 1)
-     (page-size :parameter-type 'integer :init-form *default-page-size*))
+     (page-size :parameter-type 'integer :init-form *default-page-size*)
+     (layer :parameter-type 'integer :init-form nil)
+     (id :parameter-type 'integer :init-form nil)
+     (name :parameter-type 'string :init-form nil))
   (setf (h:content-type*) "application/json")
   (setf (h:header-out "Access-Control-Allow-Origin") "*")
-  (encoded-network-item-list :neurons 
-                             (lambda () (neurons *net*))
-                             #'neuron-plists
-                             page
-                             page-size))
+  (let ((filter (lambda (neuron)
+                  (and (or (not layer) (= (layer neuron) layer))
+                       (or (not id) (= (id neuron) id))
+                       (or (not name) (equal (name neuron) name))))))
+    (encoded-network-item-list :neurons 
+                               (lambda () (neurons *net*))
+                               filter
+                               #'neuron-plists
+                               page
+                               page-size)))
 
 (h:define-easy-handler (api-get-connections :uri "/api/connections")
     ((page :parameter-type 'integer :init-form 1)
-     (page-size :parameter-type 'integer :init-form *default-page-size*))
+     (page-size :parameter-type 'integer :init-form *default-page-size*)
+     (id :parameter-type 'integer :init-form nil))
   (setf (h:content-type*) "application/json")
   (setf (h:header-out "Access-Control-Allow-Origin") "*")
-  (encoded-network-item-list :connections
-                             (lambda () (list-outgoing (neurons *net*)))
-                             #'connection-plists
-                             page
-                             page-size))
+  (let ((filter (lambda (cx) (or (not id) (= (id cx) id)))))
+    (encoded-network-item-list :connections
+                               (lambda () (list-outgoing (neurons *net*)))
+                               filter
+                               #'connection-plists
+                               page
+                               page-size)))

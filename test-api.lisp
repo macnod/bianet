@@ -46,7 +46,7 @@
 
 (rest-service-start :port *port*)
 
-(plan 4)
+(plan 5)
 
 (subtest
     "Check /api/create-net endpoint"
@@ -70,6 +70,37 @@
         "Hidden-layer count is correct")
     (is (ds:ds-get data "result" "connection_count") 68
         "Connection count is correct")))
+
+(subtest
+    "Check /api/net endpoint"
+  (http-post "/api/create-net"
+             (list :name "test-c"
+                   :topology (vector 2 8 4 1)
+                   :thread_count 1))
+  (let* ((data (http-get "/api/net"))
+         (result (ds:ds-get data "result")))
+    (is (ds:ds-get data "status") "ok"
+        "/api/net call succeeds")
+    (is (ds:ds-get result "name") "test-c"
+        "network name is correct")
+    (is (ds:ds-get result "topology") (list 2 9 5 1)
+        "network topology is correct")
+    (is (ds:ds-get result "thread_count") 1
+        "network thread count is correct")
+    (ok (ds:ds-get result "running")
+        "network threads are running")
+    (is (ds:ds-get result "training") nil
+        "network training status is correct")
+    (ok (not (ds:ds-get result "network_error"))
+        "network error is correct")
+    (ok (not (ds:ds-get result "training_time"))
+        "network training time is correct")
+    (ok (not (ds:ds-get result "interations"))
+        "network training iterations is correct")
+    (ok (> (ds:ds-get result "max_weight") 0.0)
+        "network max-weight > 0")
+    (ok (< (ds:ds-get result "min_weight") 0.0)
+        "network min-weight < 0")))
 
 (subtest
     "Bad JSON posted to /api/create-net"
