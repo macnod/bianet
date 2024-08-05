@@ -21,3 +21,24 @@ POST http://localhost:3001/api/delete-net
 
 # Get network info
 GET http://localhost:3001/api/net
+
+# Get network error
+GET http://localhost:3001/api/error
+
+# Clear weights
+POST http://localhost:3001/api/clear-weights
+
+# Train network
+POST http://localhost:3001/api/train
+Content-Type: application/json
+
+{
+  "target_error": 0.05,
+  "max_iterations": 5000,
+  "update_frequency": 0.5
+}
+
+# Train network 
+POST http://localhost:3001/api/train
+Content-Type: application/json
+

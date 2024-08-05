@@ -4,14 +4,16 @@ import GraphPanelNetworkSummary from "./GraphPanelNetworkSummary.tsx";
 import GraphPanelSelectedNeuron from "./GraphPanelSelectedNeuron.tsx";
 import GraphPanelSelectedConnection from "./GraphPanelSelectedConnection.tsx";
 import GraphPanelGraph from "./GraphPanelGraph.tsx";
+import TrainingPanelClearWeights from "./TrainingPanelClearWeights.tsx";
 
 function GraphPanel() {
   const [selectedNeuron, setSelectedNeuron] = useState("");
   const [[selectedCxId, selectedCxColor], setSelectedCx] = useState(["", ""]);
   return (
     <>
-      <div className="graphpanel-container">
-        <div className="graphpanel-selection">
+      <div className="panel-container">
+        <div className="panel-sidebar">
+          <TrainingPanelClearWeights />
           <GraphPanelNetworkSummary />
           <GraphPanelSelectedNeuron selectedNeuron={selectedNeuron} />
           <GraphPanelSelectedConnection 
@@ -19,7 +21,7 @@ function GraphPanel() {
             color={selectedCxColor}
           />
         </div>
-        <div className="graphpanel-graph">
+        <div className="panel-main">
           <GraphPanelGraph 
             setSelectedNeuron={setSelectedNeuron}
             setSelectedConnection={setSelectedCx} 

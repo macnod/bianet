@@ -72,19 +72,19 @@ button:focus-visible {
   }
 }
 
-.graphpanel-container {
+.panel-container {
     border: 1px solid "white";
     padding: 20px;
 }
 
-.graphpanel-selection {
+.panel-sidebar {
     width: "10%";
     float: left;
     padding: 20px;
     boder: 1px solid "white";
 }
 
-.graphpanel-graph {
+.panel-main {
     width: "100px";
     float: left;
     padding: 20px;

@@ -96,7 +96,7 @@ function GraphPanelSelectedNeuron(props: GPSNProps) {
   if (error)
     return <div className="failed">Failed to load</div>;
   if (isValidating)
-    return <div className="Loading">Loading...</div>;
+    return <div className="loading">Loading...</div>;
   if (props.selectedNeuron === "")
     return ""
   const rows = assembleRows(props.selectedNeuron, data);

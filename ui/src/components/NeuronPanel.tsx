@@ -61,7 +61,7 @@ function NeuronPanel() {
   } = useSWR('http://localhost:3001/api/neurons?page-size=1000', fetcher);
   if (error)
     return <div className="failed">Failed to load</div>;
-  if (isValidating) return <div className="Loading">Loading...</div>;
+  if (isValidating) return <div className="loading">Loading...</div>;
   const neuronRows = getNeurons(data.result.neurons);
   const neuronColumns = getNeuronColumns(data.result.neurons[0]);
   return <ReactGrid rows={neuronRows} columns={neuronColumns} />;

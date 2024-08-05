@@ -100,7 +100,7 @@ function GraphPanelGraph(props:GPGProps) {
   if (neuronError || cxError)
     return <div className="failed">Failed to load</div>;
   if (neuronIsValidating || cxIsValidating)
-    return <div className="Loading">Loading...</div>;
+    return <div className="loading">Loading...</div>;
   const elements = assembleElements(
     neuronData.result.neurons, 
     cxData.result.connections);

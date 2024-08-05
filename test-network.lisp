@@ -19,8 +19,8 @@
   (is a b (apply #'format (cons nil (cons message parameters)))))
 
 (defun is-approx (a b message &rest parameters)
-  (apply #'is-f (cons (round-3 a) 
-                      (cons (round-3 b) 
+  (apply #'is-f (cons (round-3 a)
+                      (cons (round-3 b)
                             (cons message parameters)))))
 
 (defun function-name (function)
@@ -41,7 +41,7 @@
    (let ((count (length (neurons net))))
      (is-f count total-neurons "net contains ~d neurons" total-neurons))
    (let ((biases (length (remove-if-not #'biased (neurons net)))))
-     (is-f biases expected-biases 
+     (is-f biases expected-biases
            "net contains ~d biased neurons" expected-biases))
    (let* ((layer-lengths (loop for layer in (layers net)
                                collect (length layer))))
@@ -50,9 +50,9 @@
      (is-f (nth 2 layer-lengths) 3 "Layer 2 has 3 neurons")
      (is-f (nth 3 layer-lengths) 1 "Layer 3 has 1 neuron"))
    (loop for neuron in (neurons net)
-         for transfer-function-name = (function-name 
+         for transfer-function-name = (function-name
                                        (transfer-function neuron))
-         for transfer-derivative-name = (function-name 
+         for transfer-derivative-name = (function-name
                                          (transfer-derivative neuron))
          do
             (cond ((and (< (layer neuron) 3) (not (biased neuron)))
@@ -87,11 +87,11 @@
                          ((1 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 1))
                          ((1 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 0))))
          (target-error 0.05)
-         (report-frequency 100)
+         (report-frequency 0.5)
          (reports-stack nil)
-         (update-callback (lambda (e i time) 
+         (update-callback (lambda (e i time)
                             (push (list e i time) reports-stack))))
-    (train net target-error max-iterations 
+    (train net target-error max-iterations
            training-set report-frequency update-callback)
     (let ((training-result (wait-for-training net))
           (reports (reverse reports-stack)))
@@ -114,14 +114,12 @@
                          for expected-output in expected-outputs
                          always (< (abs (- expected-output output)) 0.1))
                    (format nil "inference for (~,3f ~,3f) is correct (~,3f)"
-                           (car inputs) 
-                           (car (last inputs)) 
+                           (car inputs)
+                           (car (last inputs))
                            (car (last outputs)))))
       (ok (<= (nth 1 training-result) 10)
           (format nil "training time (~,3f seconds) is less than 10 seconds"
                   (nth 1 training-result))))
     (stop-threads net)))
-    
-  
-           
+
 (finalize)

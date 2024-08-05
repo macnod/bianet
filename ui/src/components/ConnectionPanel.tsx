@@ -54,7 +54,7 @@ function ConnectionPanel() {
   } = useSWR('http://localhost:3001/api/connections?page-size=1000', fetcher);
   if (error)
     return <div className="failed">Failed to load</div>;
-  if (isValidating) return <div className="Loading">Loading...</div>;
+  if (isValidating) return <div className="loading">Loading...</div>;
   const connectionRows = getConnections(data.result.connections);
   const connectionColumns = getConnectionColumns(data.result.connections[0]);
   return <ReactGrid rows={connectionRows} columns={connectionColumns} />;

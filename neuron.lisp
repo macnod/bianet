@@ -84,7 +84,7 @@
            :initform (error ":source required"))
    (target :reader target :initarg :target :type t-neuron
            :initform (error ":target required"))
-   (weight :accessor weight :initarg :weight :initform (next-weight) 
+   (weight :accessor weight :initarg :weight :initform (next-weight)
            :type float)
    (weight-last :accessor weight-last :initform 0.0 :type float)
    (learning-rate :accessor learning-rate :initarg :learning-rate
@@ -117,9 +117,9 @@
    (modulator-count :accessor modulator-count :type integer :initform 0)
    (excited :accessor excited :type boolean :initform nil)
    (modulated :accessor modulated :type boolean :initform nil)
-   (incoming :accessor incoming :type dl:dlist 
+   (incoming :accessor incoming :type dl:dlist
              :initform (make-instance 'dl:dlist))
-   (outgoing :accessor outgoing :type dl:dlist 
+   (outgoing :accessor outgoing :type dl:dlist
              :initform (make-instance 'dl:dlist))
    (ff-count :accessor ff-count :type integer :initform 0)
    (bp-count :accessor bp-count :type integer :initform 0)
@@ -226,7 +226,7 @@
       (incf (ff-count neuron))
       (setf (excited neuron) nil)
       (setf (excitation-count neuron) 0)
-      (when (on-output-ready neuron) 
+      (when (on-output-ready neuron)
         (funcall (on-output-ready neuron))))
     (when (modulated neuron)
       (transfer-error neuron)

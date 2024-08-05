@@ -46,7 +46,7 @@
 
 (rest-service-start :port *port*)
 
-(plan 5)
+(plan 6)
 
 (subtest
     "Check /api/create-net endpoint"
@@ -176,6 +176,12 @@
                       "1"))
           "First cx connects layer 0 with layer 1"))))
 
+(subtest
+    "Check /api/error endpoint"
+  (let ((data (http-get "/api/error")))
+    (is (ds:ds-get data "status") "ok"
+        "/api/error call succeeds")
+    (is (ds:ds-get data "result" "total_size") 0)))
 
 (rest-service-stop)
 

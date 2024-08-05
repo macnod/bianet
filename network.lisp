@@ -11,7 +11,7 @@
 (defparameter *training-log-size* 10000)
 
 (defclass t-network ()
-  ((name :reader name :initarg :name :type string 
+  ((name :reader name :initarg :name :type string
          :initform (error "name is required"))
    (topology :accessor topology :initarg :topology :type list
                      :initform (error "initial-topology is required"))
@@ -22,9 +22,9 @@
    (cx-count :accessor cx-count :type integer :initform 0)
    (output-layer :accessor output-layer :type list :initform nil)
    (output-count :accessor output-count :type integer :initform 0)
-   (inputs-ready-count :accessor inputs-ready-count :type cons 
+   (inputs-ready-count :accessor inputs-ready-count :type cons
                        :initform (cons 0 0))
-   (outputs-ready-count :accessor outputs-ready-count :type cons 
+   (outputs-ready-count :accessor outputs-ready-count :type cons
                         :initform (cons 0 0))
    (running :accessor running :type boolean :initform t)
    (thread-count :accessor thread-count :initarg :thread-count
@@ -58,7 +58,7 @@
     (find-weight-extremes network)
     (start-threads network)))
 
-(defmethod add-training-error ((network t-network) 
+(defmethod add-training-error ((network t-network)
                                (network-error float)
                                (total-elapsed-time float)
                                (iteration integer)
@@ -67,7 +67,7 @@
     (dl:push-tail (training-log network)
                   (list network-error
                         total-elapsed-time
-                        iteration 
+                        iteration
                         iteration-elapsed-time))
     (when (> (dl:len (training-log network)) *training-log-size*)
       (dl:pop-head (training-log network))))
@@ -93,12 +93,12 @@
   (lambda ()
     (loop while (running network)
           for neuron = (dequeue-job network)
-          when neuron 
+          when neuron
             do (process neuron))))
 
 (defmethod start-threads ((network t-network))
   (loop for index from 1 to (thread-count network)
-        for thread-name = (format nil "bianet-~a-thread-~3,'0d" 
+        for thread-name = (format nil "bianet-~a-thread-~3,'0d"
                                   (name network) index)
         do (push (make-thread (thread-work network) :name thread-name)
                  (thread-pool network))))
@@ -157,9 +157,9 @@
   layers)
 
 (defmethod simple-network-layers ((network t-network))
-  (loop 
-    with output-ready-callback = (lambda () 
-                                   (sb-ext:atomic-incf 
+  (loop
+    with output-ready-callback = (lambda ()
+                                   (sb-ext:atomic-incf
                                        (car (outputs-ready-count network))))
     and input-ready-callback = (lambda ()
                                  (sb-ext:atomic-incf
@@ -170,7 +170,7 @@
     for is-input-layer = (zerop layer-index)
     for is-output-layer = (= layer-index (1- layer-count))
     collect
-    (loop 
+    (loop
       with layer-size = (if (or is-input-layer is-output-layer)
                             ;; This is not a hidden layer, so use the
                             ;; specified number of neurons.
@@ -197,7 +197,7 @@
                                     :layer layer-index
                                     :job-queue (enqueue-job network)
                                     :on-input-ready input-ready-callback))
-                    (t 
+                    (t
                      (make-instance
                         't-neuron
                         :transfer-key transfer-key
@@ -213,14 +213,14 @@
             (car (last layers)))))
 
 (defmethod excite ((network t-network) (inputs list))
-  (loop 
+  (loop
     initially (setf (car (outputs-ready-count network)) 0)
     for input in inputs
     for neuron in (input-layer network)
     do (excite neuron input)
-    finally 
+    finally
        (wait-for-outputs network)
-       (return (loop for neuron in (output-layer network) 
+       (return (loop for neuron in (output-layer network)
                      collect (output neuron)))))
 
 (defmethod wait-for-outputs ((network t-network))
@@ -261,7 +261,7 @@
         finally (return max-error)))
 
 (defmethod eucledian-error ((network t-network) (expected-outputs list))
-  (sqrt 
+  (sqrt
    (reduce #'+ (mapcar (lambda (x) (* x x))
                        (output-errors network expected-outputs)))))
 
@@ -281,7 +281,7 @@
                   (target-error float)
                   (max-iterations integer)
                   (training-set list)
-                  (update-frequency integer)
+                  (update-frequency float)
                   (update-callback function))
   (if (with-mutex ((training-mutex network)) (training network))
       :fail-already-training
@@ -294,21 +294,23 @@
           (lambda ()
             (loop
               with start-time = (u:mark-time)
+              with last-update = 0
               for iteration from 1 to max-iterations
               for iteration-start-time = (u:mark-time)
               for network-error = (propagate-frames network training-set)
               while (> network-error target-error)
-              when (zerop (mod iteration update-frequency))
+              when (> (- iteration-start-time last-update) update-frequency)
                 do (let ((total-time (u:elapsed-time start-time))
                          (iteration-time (u:elapsed-time iteration-start-time)))
                      (add-training-error
-                      network 
+                      network
                       network-error
                       total-time
                       iteration
                       iteration-time)
+                     (setf last-update (u:mark-time))
                      (when update-callback
-                       (funcall update-callback 
+                       (funcall update-callback
                                 network-error iteration total-time)))
               finally
                  (let ((total-time (u:elapsed-time start-time))
@@ -331,7 +333,9 @@
     for cx in (list-outgoing (neurons network))
         do (setf (weight cx) (next-weight)
                  (delta cx) 0.0)
-           finally (find-weight-extremes network)))
+           finally (find-weight-extremes network)
+                   (with-mutex ((training-log-mutex network))
+                     (dl:clear (training-log network)))))
 
 (defmethod wait-for-training ((network t-network))
   (loop while (with-mutex ((training-mutex network)) (training network))
@@ -340,8 +344,7 @@
 
 (defmethod find-weight-extremes ((network t-network))
   (let ((weights (mapcar #'weight (list-outgoing (neurons network)))))
-    (setf (min-weight network) (reduce (lambda (a b) (if (< a b) a b)) 
+    (setf (min-weight network) (reduce (lambda (a b) (if (< a b) a b))
                                        weights)
           (max-weight network) (reduce (lambda (a b) (if (> a b) a b))
                                        weights))))
-  

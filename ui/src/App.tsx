@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import CustomTabPanel from "./components/CustomTabPanel.tsx";
 import GridPanel from "./components/GridPanel.tsx";
 import GraphPanel from "./components/GraphPanel.tsx";
+import TrainingPanel from "./components/TrainingPanel.tsx";
 import './App.css';
 import styled from "styled-components";
 
@@ -54,7 +55,7 @@ function App() {
             <GraphPanel />
           </CustomTabPanel>
           <CustomTabPanel tabgroup="main" value={value} index={2}>
-            Training Panel
+            <TrainingPanel />
           </CustomTabPanel>
         </Box>
       </Page>

@@ -27,7 +27,7 @@ function GridPanel() {
     <>
       <Box sx={{ width: '100%' }}>
         <Box sx= {{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={value} onChange={handleChange} aria-label="Bianet tabs">
+          <Tabs value={value} onChange={handleChange} aria-label="Grid tabs">
             <Tab label="Neurons" {...a11yProps(0)} />
             <Tab label="Connections" {...a11yProps(1)} />
           </Tabs>
