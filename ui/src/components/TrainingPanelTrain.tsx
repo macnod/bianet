@@ -13,7 +13,7 @@ async function postRequest(url:string, {arg}:{arg: string}) {
 }
 
 interface TPTInterface {
-  refreshChart: Function
+  refresh: Function
 }
 
 function TrainingPanelTrain(props:TPTInterface) {
@@ -28,7 +28,7 @@ function TrainingPanelTrain(props:TPTInterface) {
             max_iterations: 5000,
             update_frequency: 0.1}));
           if (result.status === "ok") {
-            props.refreshChart();
+            props.refresh();
             console.log("Started training");
           }
         } catch(e) {

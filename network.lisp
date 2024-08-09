@@ -42,6 +42,7 @@
                  :initform (make-instance 'dl:dlist))
    (training-log-mutex :accessor training-log-mutex :type mutex
                        :initform (make-mutex :name "training-log"))
+   (training-set :accessor training-set :type list :initform nil)
    (max-weight :accessor max-weight :type float :initform 0.0)
    (min-weight :accessor min-weight :type float :initform 0.0)))
 
@@ -57,6 +58,32 @@
           (output-count network) (length output-layer))
     (find-weight-extremes network)
     (start-threads network)))
+
+(defmethod is-training ((network t-network))
+  (with-mutex ((training-mutex network))
+    (training network)))
+
+(defmethod set-training ((network t-network))
+  (with-mutex ((training-mutex network))
+    (setf (training network) t)))
+
+(defmethod clear-training ((network t-network))
+  (with-mutex ((training-mutex network))
+    (setf (training network) nil)))
+
+(defmethod stop-training ((network t-network))
+  (when (is-training network)
+    (clear-training network)
+    (wait-for-training network)))
+
+(defmethod training-log-tail ((network t-network))
+  (with-mutex ((training-log-mutex network))
+    (dl:peek-tail (training-log network))))
+
+(defmethod clear-training-log ((network t-network))
+  (stop-training network)
+  (with-mutex ((training-log-mutex network))
+    (dl:clear (training-log network))))
 
 (defmethod add-training-error ((network t-network)
                                (network-error float)
@@ -283,10 +310,10 @@
                   (training-set list)
                   (update-frequency float)
                   (update-callback function))
-  (if (with-mutex ((training-mutex network)) (training network))
+  (if (is-training network)
       :fail-already-training
       (progn
-        (with-mutex ((training-mutex network)) (setf (training network) t))
+        (set-training network)
         (dl:clear (training-log network))
         (values
          :success-training-started
@@ -298,7 +325,8 @@
               for iteration from 1 to max-iterations
               for iteration-start-time = (u:mark-time)
               for network-error = (propagate-frames network training-set)
-              while (> network-error target-error)
+              while (and (is-training network)
+                         (> network-error target-error))
               when (> (- iteration-start-time last-update) update-frequency)
                 do (let ((total-time (u:elapsed-time start-time))
                          (iteration-time (u:elapsed-time iteration-start-time)))
@@ -322,8 +350,7 @@
                     total-time
                     iteration
                     iteration-time)
-                   (with-mutex ((training-mutex network))
-                     (setf (training network) nil))
+                   (clear-training network)
                    (when update-callback
                      (funcall update-callback network-error iteration total-time)))))
           :name (format nil "bianet-~a-training" (name network)))))))
@@ -334,13 +361,12 @@
         do (setf (weight cx) (next-weight)
                  (delta cx) 0.0)
            finally (find-weight-extremes network)
-                   (with-mutex ((training-log-mutex network))
-                     (dl:clear (training-log network)))))
+                   (clear-training-log network)))
 
 (defmethod wait-for-training ((network t-network))
-  (loop while (with-mutex ((training-mutex network)) (training network))
+  (loop while (is-training network)
         do (sleep 0.1)
-        finally (return (dl:peek-tail (training-log network)))))
+        finally (return (training-log-tail network))))
 
 (defmethod find-weight-extremes ((network t-network))
   (let ((weights (mapcar #'weight (list-outgoing (neurons network)))))
@@ -348,3 +374,19 @@
                                        weights)
           (max-weight network) (reduce (lambda (a b) (if (> a b) a b))
                                        weights))))
+
+(defmethod validate-training-set ((network t-network) (frames list))
+  (loop for (inputs outputs) in frames
+        for index = 0 then (1+ index)
+        always (and (= (length inputs) (input-count network))
+                    (= (length outputs) (output-count network))
+                    (loop for input in inputs always (numberp input))
+                    (loop for output in outputs always (numberp output)))))
+
+(defmethod update-training-set ((network t-network) (frames list))
+  (if (validate-training-set network frames)
+      (progn
+        (clear-training-log network)
+        (setf (training-set network) frames)
+        t)
+      nil))

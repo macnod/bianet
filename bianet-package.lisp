@@ -105,15 +105,23 @@
    topology
 
    ;; network methods
+   clear-training
+   clear-training-log
    compute-cx-count
    compute-weights-random
    compute-weights-sinusoidal
    eucledian-error
+   is-training
    output-errors
+   set-training
    stop-threads
    train
    training
    training-log
+   training-log-tail
+   training-set
+   update-training-set
+   validate-training-set
    wait-for-inputs
    wait-for-outputs
    wait-for-training

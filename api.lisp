@@ -224,6 +224,17 @@
                    :required t :min 1 :max *max-thread-count*))))
     (values name topology thread-count errors)))
 
+(defun validate-frames (net json)
+  (let* ((frames (ds:ds-get json "frames"))
+         (tset (loop for frame in frames
+                     for inputs = (subseq frame 0 (input-count net))
+                     for outputs = (subseq frame (input-count net))
+                     collect (list inputs outputs)))
+         (errors (unless (validate-training-set net tset)
+                   (list "Invalid training set"))))
+    (values tset errors)))
+        
+
 (defun validate-train-net (json)
   (let* ((target-error (ds:ds-get json "target_error"))
          (max-iterations (ds:ds-get json "max_iterations"))
@@ -256,7 +267,7 @@
 (defun set-post-headers ()
   (setf (h:content-type*) "application/json")
   (setf (h:header-out "Access-Control-Allow-Origin") "*")
-  (setf (h:header-out "Access-Control-Allow-Methods") "POST,OPTIONS")
+  (setf (h:header-out "Access-Control-Allow-Methods") "POST,GET,OPTIONS")
   (setf (h:header-out "Access-Control-Allow-Headers")
         (format nil "~{~a~^, ~}"
                 (list "Content-Type")))
@@ -299,6 +310,9 @@
                  :result (list
                           :name (name *net*)
                           :topology (map 'vector 'identity (topology *net*))
+                          :neuron_count (reduce '+ (topology *net*))
+                          :connection_count (length 
+                                             (list-outgoing (neurons *net*)))
                           :thread_count (thread-count *net*)
                           :running (if (running *net*) t y:false)
                           :training (with-mutex ((training-mutex *net*))
@@ -313,6 +327,8 @@
                :result (list
                         :name ""
                         :topology (vector)
+                        :neuron_count 0
+                        :connection_count 0
                         :thread_count 0
                         :running nil
                         :training nil
@@ -380,7 +396,6 @@
                               1000))
         (training (with-mutex ((training-mutex *net*))
                     (if (training *net*) t y:false))))
-
     (setf (getf (getf response :result) :training) training)
     (encode response)))
 
@@ -388,8 +403,9 @@
 (h:define-easy-handler (api-clear-weights :uri "/api/clear-weights"
                                           :default-request-type :post)
     ()
-  (setf (h:content-type*) "application/json")
-  (setf (h:header-out "Access-Control-Allow-Origin") "*")
+  (set-post-headers)
+  ;; (setf (h:content-type*) "application/json")
+  ;; (setf (h:header-out "Access-Control-Allow-Origin") "*")
   (clear-weights *net*)
   (encode (list :status "ok")))
 
@@ -405,8 +421,7 @@
             (validate-train-net json)
           (format t "target-error=~a; max-iterations=~a; update-frequency=~a; errors=~a~%"
                   target-error max-iterations update-frequency errors)
-          (if (with-mutex ((training-mutex *net*))
-                (training *net*))
+          (if (is-training *net*)
               (push "Network is already training" errors)
               (loop for thread in (list-all-threads)
                     when (equal (format nil "bianet-~a-training" (name *net*))
@@ -426,10 +441,53 @@
                    (train *net*
                           target-error
                           max-iterations
-                          *training-set*
+                          (training-set *net*)
                           update-frequency
                           (lambda (e i time)
                             (format t "error=~,5f; iteration=~d; time=~,5f seconds~%"
                                     e i time))))
                  :name (format nil "bianet-~a-training" (name *net*)))
                 (encode (list :status "ok"))))))))
+
+(h:define-easy-handler (api-training-set :uri "/api/training-set"
+                                         :default-request-type :get)
+    ((page :parameter-type 'integer :init-form 1)
+     (page-size :parameter-type 'integer :init-form *default-page-size*))
+  (set-post-headers)
+  (case (h:request-method*)
+    (:post
+     (process-json
+       (multiple-value-bind (frames errors)
+           (validate-frames *net* json)
+         (if errors
+             (encode (list :status "fail"
+                           :errors (map 'vector #'identity errors)))
+             (progn
+               (update-training-set *net* frames)
+               (encode (list :status "ok")))))))
+    (:get
+     (if *net*
+         (let* ((result (paged-list :frames
+                                    (lambda () (training-set *net*))
+                                    #'identity
+                                    (lambda (data) 
+                                      (map 'vector
+                                           (lambda (frame)
+                                             (map 'vector 'identity
+                                                  (append (first frame)
+                                                          (second frame))))
+                                           data))
+                                    page
+                                    page-size)))
+           (setf (getf (getf result :result) :input_count) 
+                 (input-count *net*)
+                 (getf (getf result :result) :output_count) 
+                 (output-count *net*))
+           (encode result))
+           
+         (encode
+          (list :status "ok"
+                :frames (vector)))))
+    (t
+     (encode (list :status "ok"
+                   :frames (vector))))))

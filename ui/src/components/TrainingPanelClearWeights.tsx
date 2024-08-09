@@ -9,7 +9,7 @@ async function postRequest(url:string) {
 }
 
 interface TPCWInterface {
-  refreshChart: Function
+  refresh: Function
 }
 
 function TrainingPanelClearWeights(props:TPCWInterface) {
@@ -21,7 +21,7 @@ function TrainingPanelClearWeights(props:TPCWInterface) {
         onClick={async () => {
           try {
             const data = await trigger();
-            props.refreshChart();
+            props.refresh();
             if (data.status === "ok")
               console.log("Weights cleared");
             else

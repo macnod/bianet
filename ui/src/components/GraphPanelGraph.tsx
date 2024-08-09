@@ -1,8 +1,10 @@
 import React from 'react';
+import { useEffect, useState } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import useSWR from 'swr';
-import { Neuron } from "./Neuron.tsx"
-import { Connection } from "./Connection.tsx"
+import { Neuron } from "./Neuron.tsx";
+import { Connection } from "./Connection.tsx";
+import { makeUrl } from "./utilities.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -56,7 +58,6 @@ function assembleElements(
   connections: Connection[]
 ) {
   let we = weightExtremes(connections);
-  console.log(we);
   const normalize = (w:number) => w >= 0 ? w / we.max : -w / we.min;
   return [
     ...neurons.map(neuron => (
@@ -83,20 +84,25 @@ function assembleElements(
 
 interface GPGProps {
   setSelectedNeuron: Function,
-  setSelectedConnection: Function
+  setSelectedConnection: Function,
+  seed: number
 }
 
 function GraphPanelGraph(props:GPGProps) {
+  const pageSize = 100000;
+  const params = {"page-size": pageSize};
+  const neuronUrl = makeUrl('http', 'localhost', 3001, '/api/neurons', params);
+  const cxUrl = makeUrl('http', 'localhost', 3001, '/api/connections', params);
   const {
     data: neuronData,
     error: neuronError,
     isValidating: neuronIsValidating 
-  } = useSWR('http://localhost:3001/api/neurons?page-size=1000', fetcher);
+  } = useSWR(neuronUrl, fetcher);
   const {
     data: cxData,
     error: cxError,
     isValidating: cxIsValidating
-  } = useSWR('http://localhost:3001/api/connections?page-size=1000', fetcher);
+  } = useSWR(cxUrl, fetcher);
   if (neuronError || cxError)
     return <div className="failed">Failed to load</div>;
   if (neuronIsValidating || cxIsValidating)
@@ -108,41 +114,44 @@ function GraphPanelGraph(props:GPGProps) {
     .filter((neuron:Neuron) => neuron.layer === 0)
     .map((neuron:Neuron) => neuron.name);
   return (
-    <CytoscapeComponent
-      cy={
-        (cy) => {
-          cy.on('select', 'node', (evt) => 
-            props.setSelectedNeuron(evt.target.id()));
-          cy.on('select', 'edge', (evt) => {
-            props.setSelectedConnection(
-              [evt.target.id(),
-                evt.target.style('line-color')]);
-          });
-        }
-      }
-      elements={elements}
-      layout={{
-        name: 'breadthfirst',
-        directed: true,
-        roots: {roots}
-      }}
-      style={{width: '60vw', height:'70vh'}}
-      stylesheet={[
-        {
-          selector: 'node',
-          style: {
-            width: '2px',
-            height: '50px'
-          }
-        },
-        {
-          selector: 'edge',
-          style: {
-            width: '1px'
+    <>
+      <CytoscapeComponent
+        key={props.seed}
+        cy={
+          (cy) => {
+            cy.on('select', 'node', (evt) => 
+              props.setSelectedNeuron(evt.target.id()));
+            cy.on('select', 'edge', (evt) => {
+              props.setSelectedConnection(
+                [evt.target.id(),
+                  evt.target.style('line-color')]);
+            });
           }
         }
-      ]} 
-    />
+        elements={elements}
+        layout={{
+          name: 'breadthfirst',
+          directed: true,
+          roots: {roots}
+        }}
+        style={{width: '60vw', height:'70vh'}}
+        stylesheet={[
+          {
+            selector: 'node',
+            style: {
+              width: '2px',
+              height: '50px'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              width: '1px'
+            }
+          }
+        ]} 
+      />
+    </>
   );
 }
 

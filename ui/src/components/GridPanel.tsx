@@ -1,10 +1,8 @@
 import { React, useState } from 'react';
-import { ReactGrid, Column, Row } from '@silevis/reactgrid';
 import { Neuron } from "./Neuron.tsx";
 import CustomTabPanel from "./CustomTabPanel.tsx";
 import NeuronPanel from "./NeuronPanel.tsx";
 import ConnectionPanel from "./ConnectionPanel.tsx";
-import "@silevis/reactgrid/styles.css";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -25,7 +23,7 @@ function GridPanel() {
  
   return (
     <>
-      <Box sx={{ width: '100%' }}>
+      <Box sx={{ width: '80%' }}>
         <Box sx= {{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={value} onChange={handleChange} aria-label="Grid tabs">
             <Tab label="Neurons" {...a11yProps(0)} />

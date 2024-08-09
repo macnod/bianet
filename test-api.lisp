@@ -9,12 +9,14 @@
 (require :prove)
 (require :dc-ds)
 (require :cl-ppcre)
+(require :dc-eclectic)
 
 (defpackage :test-api 
-  (:use :cl :prove :bianet :cl-ppcre)
+  (:use :cl :prove :bianet :cl-ppcre :dc-eclectic)
   (:local-nicknames (:dr :drakma)
                     (:y :yason)
-                    (:ds :dc-ds)))
+                    (:ds :dc-ds)
+                    (:u :dc-eclectic)))
 
 (in-package :test-api)
 
@@ -46,7 +48,7 @@
 
 (rest-service-start :port *port*)
 
-(plan 6)
+(plan 7)
 
 (subtest
     "Check /api/create-net endpoint"
@@ -85,6 +87,10 @@
         "network name is correct")
     (is (ds:ds-get result "topology") (list 2 9 5 1)
         "network topology is correct")
+    (is (ds:ds-get result "neuron_count") 17
+        "network neuron count is correct")
+    (is (ds:ds-get result "connection_count") 68
+        "network connection count is correct")
     (is (ds:ds-get result "thread_count") 1
         "network thread count is correct")
     (ok (ds:ds-get result "running")
@@ -182,6 +188,37 @@
     (is (ds:ds-get data "status") "ok"
         "/api/error call succeeds")
     (is (ds:ds-get data "result" "total_size") 0)))
+
+(subtest
+    "Check POST /api/training-set"
+  (let ((data (http-post 
+               "/api/training-set"
+               (list :frames 
+                     (vector 
+                      (vector 0 0 0 1)
+                      (vector 0 1 1 1)
+                      (vector 1 0 1 1)
+                      (vector 1 1 0 1))))))
+    (is (ds:ds-get data "status") "fail")
+    (is (nth 0 (ds:ds-get data "errors"))
+        "Invalid training set"))
+  (let ((data (http-post 
+               "/api/training-set"
+               (list :frames 
+                     (vector 
+                      (vector 0 0 0)
+                      (vector 0 1 1)
+                      (vector 1 0 1)
+                      (vector 1 1 0))))))
+    (is (ds:ds-get data "status") "ok" "POST /api/training-set succceeds"))
+  (let ((data (http-get "/api/training-set?page=1&page-size=3")))
+    (is (ds:ds-get data "status") "ok" "GET /api/training-set succeeds")
+    (is (length (ds:ds-get data "result" "frames")) 3
+        "training set page size is correct")
+    (is (ds:ds-get data "result" "total_size") 4
+        "total_size key has correct value")
+    (is (ds:ds-get data "result" "selection_size") 3
+        "selection_size key has correct value")))
 
 (rest-service-stop)
 

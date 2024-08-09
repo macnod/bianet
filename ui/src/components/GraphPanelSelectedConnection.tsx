@@ -18,7 +18,6 @@ function assembleColumns(): Column[] {
 }
 
 function assembleRows(selectedEdge:string, color:string, data:Object): Row[] {
-  console.log("assembleRows");
   if (selectedEdge != null
     && 'status' in data && data.status === "ok"
     && 'total_size' in data.result && data.result.total_size == 1) {
@@ -108,7 +107,6 @@ function GraphPanelSelectedConnection(props:GPSCProps) {
     return <div className="loading">Loading...</div>;
   if (props.id == "")
     return ""
-  console.log("id=" + props.id + "; color=" + props.color);
   const rows = assembleRows(props.id, props.color, data);
   const columns = assembleColumns();
   return (

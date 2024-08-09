@@ -1,42 +1,32 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import useSWR from 'swr';
 import { LineChart } from '@mui/x-charts/LineChart';
+import { TrainingError } from "./TrainingError.tsx";
+import { makeUrl } from "./utilities.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
-interface TrainingError {
-  error: number,
-  time: number,
-  iteration: number,
-  iteration_time: number
-}
-
-interface TPCInterface {
-  seed: number
-}
-
-function TrainingPanelChart(props:TPCInterface) {
-  const [isTraining, setIsTraining] = useState(false);
-  const [lastSeed, setLastSeed] = useState(0);
+function TrainingPanelChart() {
+  const [isTraining, setIsTraining] = useState(true);
+  const url = makeUrl('http', 'localhost', 3001, '/api/error', {});
+  const interval = (data) => (
+    data 
+      && 'result' in data 
+      && data.result.training
+  ) ? 1000 : 0;
   const {
     data,
     error,
-    isValidating,
-    mutate
-  } = useSWR(
-    'http://localhost:3001/api/error',
-    fetcher,
-    {refreshInterval: (x) => (x && 'result' in x && x.result.training) ? 1000 : 0});
+    isValidating
+  } = useSWR(url, fetcher, {refreshInterval: interval});
 
-  if (isTraining != data.result.training) {
-    setIsTraining(data.result.training);
-    if (!isTraining)
-      console.log("Training complete");
-  }
-  if (props.seed != lastSeed) {
-    setLastSeed(props.seed);
-    mutate({...data});
+  if (data) {
+    if (isTraining != data.result.training) {
+      setIsTraining(data.result.training);
+      if (!isTraining)
+        console.log("Training complete");
+    }
   }
 
   if (error) return <div className="failed">Failed to load</div>;
@@ -44,12 +34,13 @@ function TrainingPanelChart(props:TPCInterface) {
 
   return (
     <>
-      <LineChart
-        xAxis={[{ data: data.result.errors.map((e:TrainingError) => e.time) }]}
-        series={[{ data: data.result.errors.map((e:TrainingError) => e.error) }]}
-        width={800 + props.seed}
-        height={600}
-      />
+      <div className="bianet-error-chart">
+        <LineChart
+          xAxis={[{ data: data.result.errors.map((e:TrainingError) => e.time) }]}
+          series={[{ data: data.result.errors.map((e:TrainingError) => e.error) }]}
+          height={600}
+        />
+      </div>
     </>
   );
 }

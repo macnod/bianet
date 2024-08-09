@@ -11,7 +11,7 @@ POST http://localhost:3001/api/create-net
 GET http://localhost:3001/api/neurons
 
 # Get network's connections
-GET http://localhost:3001/api/connections?page-size=1000
+GET http://localhost:3001/api/connections?page-size=30
 
 # Get specific network connection
 GET http://localhost:3001/api/connections?id=3595
@@ -42,3 +42,18 @@ Content-Type: application/json
 POST http://localhost:3001/api/train
 Content-Type: application/json
 
+# Get Training set
+GET http://localhost:3001/api/training-set
+
+# Post training set
+POST http://localhost:3001/api/training-set
+Content-type: application/json
+
+{
+  frames: [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  ]
+}

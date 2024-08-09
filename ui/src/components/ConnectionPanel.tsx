@@ -1,7 +1,12 @@
+import React from 'react';
+import { useState, ChangeEvent } from 'react';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
+import Pagination from '@mui/material/Pagination';
+import Stack from '@mui/material/Stack';
 import { Connection } from "./Connection.tsx";
 import "@silevis/reactgrid/styles.css";
 import useSWR from 'swr';
+import { makeUrl } from "./utilities.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -47,17 +52,37 @@ function getConnections(connections: Neuron[]): Row[] {
 }
 
 function ConnectionPanel() {
-  const {
-    data,
-    error,
-    isValidating
-  } = useSWR('http://localhost:3001/api/connections?page-size=1000', fetcher);
+  const pageSize = 25;
+  const [page, setPage] = useState(1);
+  const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
+  const url = makeUrl(
+    'http', 'localhost', 3001, '/api/connections', {
+      page: page,
+      "page-size": pageSize
+    });
+  const {data, error, isValidating} = useSWR(url, fetcher);
   if (error)
     return <div className="failed">Failed to load</div>;
   if (isValidating) return <div className="loading">Loading...</div>;
   const connectionRows = getConnections(data.result.connections);
   const connectionColumns = getConnectionColumns(data.result.connections[0]);
-  return <ReactGrid rows={connectionRows} columns={connectionColumns} />;
+  const pageCount = Math.ceil(data.result.total_size / pageSize);
+  return (
+    <> 
+      <Stack alignItems="center">
+        <ReactGrid rows={connectionRows} columns={connectionColumns} />
+        <Pagination
+          count={pageCount}
+          showFirstButton={true}
+          showLastButton={true}
+          onChange={onPageChange}
+          page={page}
+          boundaryCount={3}
+          siblingCount={3}
+        />
+      </Stack>
+    </>
+  );
 }
 
 export default ConnectionPanel;
