@@ -1,7 +1,8 @@
 import React from 'react';
 import { useState } from 'react';
-import NetworkInfoPanel from "./NetworkInfoPanel"
-import CustomTabPanel from "./CustomTabPanel.tsx";
+import NetworkInfoPanel from './NetworkInfoPanel'
+import CreateNetwork from './CreateNetwork'
+import CustomTabPanel from './CustomTabPanel.tsx';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -35,7 +36,7 @@ function NetworkPanel() {
           <NetworkInfoPanel />
         </CustomTabPanel>
         <CustomTabPanel tabgroup="network" value={value} index={1}>
-          <h3>New Network Form</h3>
+          <CreateNetwork />
         </CustomTabPanel>
       </Box>
     </>

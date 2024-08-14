@@ -112,12 +112,15 @@
    compute-weights-sinusoidal
    eucledian-error
    is-training
+   list-bianet-threads
    output-errors
    set-training
    stop-threads
+   terminate-bianet-thread
    train
    training
    training-log
+   training-log-list
    training-log-tail
    training-set
    update-training-set

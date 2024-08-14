@@ -314,7 +314,6 @@
       :fail-already-training
       (progn
         (set-training network)
-        (dl:clear (training-log network))
         (values
          :success-training-started
          (make-thread
@@ -390,3 +389,18 @@
         (setf (training-set network) frames)
         t)
       nil))
+
+(defmethod training-log-list ((network t-network))
+  (with-mutex ((training-log-mutex network))
+    (dl:to-list (training-log network))))
+
+(defun list-bianet-threads ()
+  (loop for thread in (list-all-threads)
+        when (ppcre:scan "^bianet-" (thread-name thread))
+          collect thread))
+
+(defun terminate-bianet-thread (name-regex)
+  (loop for thread in (list-all-threads)
+        for regex = (format nil "^bianet-.*~a.*" name-regex)
+        when (ppcre:scan name-regex (thread-name thread))
+          do (return (terminate-thread thread))))

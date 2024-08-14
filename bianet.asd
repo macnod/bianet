@@ -15,4 +15,10 @@
   :components ((:file "bianet-package")
                (:file "neuron")
                (:file "network")
-               (:file "api")))
+               (:file "api")
+               (:file "api-net")
+               (:file "api-train")
+               (:file "api-training-set")
+               (:file "api-neurons")
+               (:file "api-connections")))
+                      

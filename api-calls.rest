@@ -1,5 +1,31 @@
-# Create network
-POST http://localhost:3001/api/create-net
+#
+# Network
+#
+
+# PUT network info (should fail)
+PUT http://localhost:3001/api/net
+
+# Options network
+OPTIONS http://localhost:3001/api/net
+
+# Get network info
+GET http://localhost:3001/api/net
+
+# Create a new network
+POST http://localhost:3001/api/net
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "test-a",
+  "topology": [10, 16, 8, 8, 10],
+  "thread_count": 1
+}
+
+# Create a new network
+POST http://localhost:3001/api/net
+Content-Type: application/json
+Accept: application/json
 
 {
   "name": "test-a",
@@ -7,8 +33,30 @@ POST http://localhost:3001/api/create-net
   "thread_count": 1
 }
 
+# Bad call to create a network
+POST http://localhost:3001/api/net
+Content-Type: application/json
+Accept: application/json
+
+{
+  "bogus":""
+}
+
+
+# Delete the network
+DELETE http://localhost:3001/api/net
+
+#
+# List neurons and connections
+
 # Get network's neurons
 GET http://localhost:3001/api/neurons
+
+# Get neurons in layer 1
+GET http://localhost:3001/api/neurons?layer=1
+
+# Get network's connections
+GET http://localhost:3001/api/connections
 
 # Get network's connections
 GET http://localhost:3001/api/connections?page-size=30
@@ -16,17 +64,18 @@ GET http://localhost:3001/api/connections?page-size=30
 # Get specific network connection
 GET http://localhost:3001/api/connections?id=3595
 
-# Delete network
-POST http://localhost:3001/api/delete-net
+#
+# Network training
+#
 
-# Get network info
-GET http://localhost:3001/api/net
+# OPTIONS /api/train
+OPTIONS http://localhost:3001/api/train
 
-# Get network error
-GET http://localhost:3001/api/error
+# PUT /api/train (should fail)
+PUT http://localhost:3001/api/train
 
-# Clear weights
-POST http://localhost:3001/api/clear-weights
+# Get network training status
+GET http://localhost:3001/api/train
 
 # Train network
 POST http://localhost:3001/api/train
@@ -38,9 +87,8 @@ Content-Type: application/json
   "update_frequency": 0.5
 }
 
-# Train network 
-POST http://localhost:3001/api/train
-Content-Type: application/json
+# Delete weights
+DELETE http://localhost:3001/api/train
 
 # Get Training set
 GET http://localhost:3001/api/training-set
@@ -55,5 +103,18 @@ Content-type: application/json
     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  ]
+}
+
+# Post training set
+POST http://localhost:3001/api/training-set
+Content-type: application/json
+
+{
+  frames: [
+    [0, 0, 0],
+    [0, 1, 1],
+    [1, 0, 1],
+    [1, 1, 0]
   ]
 }
