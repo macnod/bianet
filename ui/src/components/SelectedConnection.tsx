@@ -97,7 +97,7 @@ interface Props {
   global: Global
 }
 
-function GraphPanelSelectedConnection(props:Props) {
+function SelectedConnection(props:Props) {
   const url = makeUrl(
     props.global.protocol,
     props.global.host,
@@ -113,7 +113,7 @@ function GraphPanelSelectedConnection(props:Props) {
     return <div className="failed">Failed to load</div>;
   if (isValidating)
     return <div className="loading">Loading...</div>;
-  if (props.id == "")
+  if (props.id == "" || data.status === "fail")
     return ""
   const rows = assembleRows(props.id, props.color, data);
   const columns = assembleColumns();
@@ -125,4 +125,4 @@ function GraphPanelSelectedConnection(props:Props) {
   );
 }
 
-export default GraphPanelSelectedConnection;
+export default SelectedConnection;

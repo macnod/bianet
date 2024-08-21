@@ -1,6 +1,7 @@
 (in-package :bianet)
 
-(h:define-easy-handler (api-get-neurons :uri "/api/neurons")
+(h:define-easy-handler (api-get-neurons :uri "/api/neurons"
+                                        :default-request-type :get)
     ((page :parameter-type 'integer :init-form 1)
      (page-size :parameter-type 'integer :init-form *default-page-size*)
      (layer :parameter-type 'integer :init-form nil)
@@ -12,18 +13,20 @@
       
 (defun api-neurons-get (page page-size layer id name)
   (set-headers)
-  (let ((filter (lambda (neuron)
-                  (and (or (not layer) (= (layer neuron) layer))
-                       (or (not id) (= (id neuron) id))
-                       (or (not name) (equal (name neuron) name))))))
-    (encode 
-     (paged-list 
-      :key :neurons
-      :list-function (lambda () (neurons *net*))
-      :filter-function filter
-      :rows-function #'neuron-plists
-      :page page
-      :page-size page-size))))
+  (if *net*
+      (let ((filter (lambda (neuron)
+                      (and (or (not layer) (= (layer neuron) layer))
+                           (or (not id) (= (id neuron) id))
+                           (or (not name) (equal (name neuron) name))))))
+        (encode 
+         (paged-list 
+          :key :neurons
+          :list-function (lambda () (neurons *net*))
+          :filter-function filter
+          :rows-function #'neuron-plists
+          :page page
+          :page-size page-size)))
+  (failed-request "No network defined")))
 
 (defun neuron-plists (neurons)
   (map 'vector

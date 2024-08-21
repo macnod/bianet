@@ -3,6 +3,7 @@ import useSWR from 'swr';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
 import { makeUrl } from './utilities.tsx';
 import Global from "../Global.tsx";
+import FailedStatus from "./FailedStatus.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -112,7 +113,7 @@ interface Props {
   global: Global
 }
 
-function GraphPanelNetworkSummary(props:Props) {
+function NetworkSummary(props:Props) {
   const url = makeUrl(
     props.global.protocol,
     props.global.host,
@@ -127,6 +128,7 @@ function GraphPanelNetworkSummary(props:Props) {
     return <div className="failed">Failed to load</div>;
   if (isValidating)
     return <div className="loading">Loading...</div>;
+  if (data.status === "fail") return <FailedStatus errors={data.errors} />
   const rows = assembleRows(data);
   const columns = assembleColumns();
   return (
@@ -137,4 +139,4 @@ function GraphPanelNetworkSummary(props:Props) {
   );
 }
 
-export default GraphPanelNetworkSummary;
+export default NetworkSummary;

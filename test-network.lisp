@@ -92,7 +92,7 @@
          (update-callback (lambda (e i time)
                             (push (list e i time) reports-stack))))
     (ok (not (training-set net)) "No training set provided yet")
-    (update-training-set net training-set)
+    (replace-training-set net training-set)
     (is (training-set net) training-set "Training set provided")
     (ok (not (training-log-tail net)) "Nothing in the training log")
     (train net target-error max-iterations
@@ -126,7 +126,7 @@
                   (nth 1 training-result)))
       (ok (> (dc-dlist:len (training-log net)) 1)
           "There are entries in the training log")
-      (update-training-set net training-set)
+      (replace-training-set net training-set)
       (ok (zerop (dc-dlist:len (training-log net))) 
           "Log cleared after training-set update"))
     (stop-threads net)))

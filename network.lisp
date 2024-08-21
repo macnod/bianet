@@ -280,7 +280,7 @@
         collect (- expected-output output)))
 
 (defmethod max-error ((network t-network) (training-set list))
-  (loop for (inputs expected-outputs) in training-set
+  (loop for (inputs expected-outputs) in (cdr training-set)
         for outputs = (excite network inputs)
         for errors = (output-errors outputs expected-outputs)
         for err = (sqrt (reduce '+ (mapcar (lambda (x) (* x x)) errors)))
@@ -298,7 +298,7 @@
                        (output-errors outputs expected-outputs)))))
 
 (defmethod propagate-frames ((network t-network) (frames list))
-  (loop for (inputs expected-outputs) in frames
+  (loop for (id inputs expected-outputs) in frames
         for outputs = (excite network inputs)
         for error = (modulate network expected-outputs)
         for max-error = error then (if (> error max-error) error max-error)
@@ -375,20 +375,26 @@
                                        weights))))
 
 (defmethod validate-training-set ((network t-network) (frames list))
-  (loop for (inputs outputs) in frames
-        for index = 0 then (1+ index)
-        always (and (= (length inputs) (input-count network))
-                    (= (length outputs) (output-count network))
-                    (loop for input in inputs always (numberp input))
-                    (loop for output in outputs always (numberp output)))))
+  (or (null frames)
+      (loop for (frame-id inputs outputs) in frames
+            for index = 0 then (1+ index)
+            always (and (= (length inputs) (input-count network))
+                        (= (length outputs) (output-count network))
+                        (loop for input in inputs always (numberp input))
+                        (loop for output in outputs always (numberp output))))))
 
-(defmethod update-training-set ((network t-network) (frames list))
-  (if (validate-training-set network frames)
-      (progn
-        (clear-training-log network)
-        (setf (training-set network) frames)
-        t)
-      nil))
+(defmethod replace-training-set ((network t-network) (frames list))
+  (when (validate-training-set network frames)
+    (clear-training-log network)
+    (setf (training-set network) frames)
+    t))
+
+;; TODO: This function should add or replace frames based on their ID
+;; (defmethod update-training-set ((network t-network) (frames list))
+;;   (when (validate-training-set network frames)
+;;     (loop with ids = (let ((h (make-hash-table 
+;;       for (frame-id inputs outputs) in 
+          
 
 (defmethod training-log-list ((network t-network))
   (with-mutex ((training-log-mutex network))

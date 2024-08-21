@@ -7,6 +7,8 @@ import { Connection } from "./Connection.tsx";
 import "@silevis/reactgrid/styles.css";
 import useSWR from 'swr';
 import { makeUrl } from "./utilities.tsx";
+import Global from "../Global.tsx";
+import FailedStatus from "./FailedStatus.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -51,12 +53,20 @@ function getConnections(connections: Neuron[]): Row[] {
   ];
 }
 
-function ConnectionPanel() {
+interface Props {
+  global: Global
+}
+
+function ConnectionPanel(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
   const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
   const url = makeUrl(
-    'http', 'localhost', 3001, '/api/connections', {
+    props.global.protocol,
+    props.global.host,
+    props.global.port,
+    props.global.api_connections,
+    {
       page: page,
       "page-size": pageSize
     });
@@ -64,6 +74,7 @@ function ConnectionPanel() {
   if (error)
     return <div className="failed">Failed to load</div>;
   if (isValidating) return <div className="loading">Loading...</div>;
+  if (data.status === "fail") return <FailedStatus errors={data.errors} />
   const connectionRows = getConnections(data.result.connections);
   const connectionColumns = getConnectionColumns(data.result.connections[0]);
   const pageCount = Math.ceil(data.result.total_size / pageSize);

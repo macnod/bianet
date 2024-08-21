@@ -11,7 +11,9 @@
 
 (defun api-net-get ()
   (set-headers)
-  (encoded-network-info))
+  (if *net*
+      (encoded-network-info)
+      (failed-request "No network defined")))
 
 (defun api-net-post ()
   (set-headers)

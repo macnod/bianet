@@ -133,7 +133,6 @@ function NetworkGraph(props:Props) {
     .map((neuron:Neuron) => neuron.name);
   return (
     <>
-      if (
       <CytoscapeComponent
         key={props.seed}
         cy={

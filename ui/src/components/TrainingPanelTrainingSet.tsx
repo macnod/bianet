@@ -6,6 +6,7 @@ import "@silevis/reactgrid/styles.css";
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
 import { makeUrl } from "./utilities.tsx";
+import Global from "../Global.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -59,12 +60,20 @@ function getRows(inputCount:number, entries:Array<Array<number>>): Row[] {
   ];
 }
 
-function TrainingPanelTrainingSet() {
+interface Props {
+  global: Global
+}
+
+function TrainingPanelTrainingSet(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
   const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
   const url = makeUrl(
-    'http', 'localhost', 3001, '/api/training-set', {
+    props.global.protocol,
+    props.global.host,
+    props.global.port,
+    props.global.api_training_set, 
+    {
       page: page,
       "page-size": pageSize
     });

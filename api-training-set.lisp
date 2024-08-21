@@ -26,35 +26,48 @@
           (if errors
               (apply #'failed-request errors)
               (progn
-                (update-training-set *net* frames)
+                (replace-training-set *net* frames)
                 (encoded-training-set *net* page page-size)))))
       (failed-request "No network defined")))
   
 (defun api-training-set-delete ()
-  (failed-request "Not implemented"))
+  (set-headers)
+  (if *net*
+      (progn 
+        (replace-training-set *net* nil)
+        (encoded-training-set *net* 1 1))
+      (failed-request "No network defined")))
 
 (defun encoded-training-set (net page page-size)
   (encode
    (paged-list
     :key :frames
     :list-function (lambda () (training-set net))
-    :rows-function (lambda (data)
-                     (map 'vector
-                          (lambda (frame)
-                            (map 'vector 'identity
-                                 (append (first frame) (second frame))))
-                          data))
+    :rows-function #'training-set-rows
     :page page
     :page-size page-size
     :other-result-keys (list :input_count (input-count net)
                              :output_count (output-count net)))))
 
+(defun training-set-rows (data)
+  ;; data looks like this: '(id inputs outputs)
+  (loop for row in data
+        collect (list :id (car row)
+                      :in (map 'vector 'identity (second row))
+                      :out (map 'vector 'identity (third row)))
+        into rows
+        finally (return (map 'vector 'identity rows))))
+
 (defun validate-frames (net json)
   (let* ((frames (ds:ds-get json "frames"))
          (tset (loop for frame in frames
-                     for inputs = (subseq frame 0 (input-count net))
-                     for outputs = (subseq frame (input-count net))
-                     collect (list inputs outputs)))
+                     for id = (ds:ds-get frame "id")
+                     for inputs = (ds:ds-get frame "in")
+                     for outputs = (ds:ds-get frame "out")
+                     collect (list id inputs outputs) into set
+                     finally
+                        (format t "~%Training set: ~a~%" set)
+                        (return set)))
          (errors (unless (validate-training-set net tset)
                    (list "Invalid training set"))))
     (values tset errors)))

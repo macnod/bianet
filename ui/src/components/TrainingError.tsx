@@ -1,6 +1,6 @@
 export interface TrainingError {
-  error: number,
-  time: number,
+  network_error: number,
+  elapsed_time: number,
   iteration: number,
   iteration_time: number
 }

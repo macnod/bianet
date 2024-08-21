@@ -1,6 +1,7 @@
 (in-package :bianet)
 
-(h:define-easy-handler (api-get-connections :uri "/api/connections")
+(h:define-easy-handler (api-get-connections :uri "/api/connections"
+                                            :default-request-type :get)
     ((page :parameter-type 'integer :init-form 1)
      (page-size :parameter-type 'integer :init-form *default-page-size*)
      (id :parameter-type 'integer :init-form nil))
@@ -18,7 +19,7 @@
                             :filter-function filter
                             :rows-function #'connection-plists
                             :page page
-                            :page page-size)))
+                            :page-size page-size)))
       (failed-request "No network defined")))
 
 (defun connection-plists (connections)

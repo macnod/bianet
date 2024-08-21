@@ -12,7 +12,7 @@ function makeUrl(
   host:string, 
   port:number = 3000,
   path:string, 
-  parameters:Object): string {
+  parameters:Object = {}): string {
     let endpoint = `${protocol}://${host}:${port}${path}`;
     if (isEmpty(parameters))
       return endpoint;

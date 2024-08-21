@@ -1,4 +1,3 @@
-import React from 'react';
 import useSWR from 'swr';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
 import { makeUrl } from './utilities.tsx';
@@ -19,11 +18,11 @@ function assembleColumns(): Column[] {
   ]
 }
 
-function assembleRows(selectedEdge:string, color:string, data:Object): Row[] {
-  if (selectedEdge != null
+function assembleRows(selectedNeuron, data): Row[] {
+  if (selectedNeuron !== ""
     && 'status' in data && data.status === "ok"
     && 'total_size' in data.result && data.result.total_size == 1) {
-      let cx = data.result.connections[0];
+      let neuron = data.result.neurons[0];
       return [
         {
           rowId: "header",
@@ -35,75 +34,68 @@ function assembleRows(selectedEdge:string, color:string, data:Object): Row[] {
         {
           rowId: 1,
           cells: [
-            {type: "text", text: "source"},
-            {type: "text", text: cx.source}]
+            {type: "text", text: "name"},
+            {type: "text", text: neuron.name}]
         },
         {
           rowId: 2,
           cells: [
-            {type: "text", text: "target"},
-            {type: "text", text: cx.target}]
+            {type: "text", text: "layer"},
+            {type: "text", text: '' + neuron.layer}]
         },
         {
           rowId: 3,
           cells: [
-            {type: "text", text: "weight"},
-            {type: "text", text: '' + cx.weight}]
+            {type: "text", text: "biased"},
+            {type: "text", text: neuron.biased ? "true" : "false"}]
         },
         {
           rowId: 4,
           cells: [
-            {type: "text", text: "learning rate"},
-            {type: "text", text: '' + cx.learning_rate}]
+            {type: "text", text: "input"},
+            {type: "text", text: '' + neuron.input}]
         },
         {
           rowId: 5,
           cells: [
-            {type: "text", text: "momentum"},
-            {type: "text", text: '' + cx.momentum}]
+            {type: "text", text: "output"},
+            {type: "text", text: '' + neuron.output}]
         },
         {
           rowId: 6,
           cells: [
-            {type: "text", text: "delta"},
-            {type: "text", text: '' + cx.delta}]
+            {type: "text", text: "error"},
+            {type: "text", text: '' + neuron.err}]
         },
         {
           rowId: 7,
           cells: [
-            {type: "text", text: "fired"},
-            {type: "text", text: '' + cx.fire_count}]
-        },
+            {type: "text", text: "incoming"},
+            {type: "text", text: '' + neuron.incoming}]
+        },        
         {
           rowId: 8,
           cells: [
-            {type: "text", text: "updated"},
-            {type: "text", text: '' + cx.update_count}]
-        },
-        {
-          rowId: 9,
-          cells: [
-            {type: "text", text: "rgb"},
-            {type: "text", text: color}]
-        }        
+            {type: "text", text: "outgoing"},
+            {type: "text", text: '' + neuron.outgoing}]
+        }
       ];
   }
   return [];
 }
 
 interface Props {
-  id: string,
-  color: string,
+  selectedNeuron: string,
   global: Global
 }
 
-function GraphPanelSelectedConnection(props:Props) {
+function SelectedNeuron(props: Props) {
   const url = makeUrl(
     props.global.protocol,
     props.global.host,
     props.global.port,
-    props.global.api_connections,
-    { id: props.id });
+    props.global.api_neurons,
+    {name: props.selectedNeuron});
   const {
     data,
     error,
@@ -113,16 +105,16 @@ function GraphPanelSelectedConnection(props:Props) {
     return <div className="failed">Failed to load</div>;
   if (isValidating)
     return <div className="loading">Loading...</div>;
-  if (props.id == "")
+  if (props.selectedNeuron === "" || data.status === "fail")
     return ""
-  const rows = assembleRows(props.id, props.color, data);
+  const rows = assembleRows(props.selectedNeuron, data);
   const columns = assembleColumns();
   return (
     <>
-      <h3>Selected Connection</h3>
+      <h3>Selected Neuron</h3>
       <ReactGrid rows={rows} columns={columns} />
     </>
   );
 }
 
-export default GraphPanelSelectedConnection;
+export default SelectedNeuron;

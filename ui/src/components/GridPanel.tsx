@@ -1,12 +1,11 @@
 import { React, useState } from 'react';
-import { Neuron } from "./Neuron.tsx";
 import CustomTabPanel from "./CustomTabPanel.tsx";
 import NeuronPanel from "./NeuronPanel.tsx";
 import ConnectionPanel from "./ConnectionPanel.tsx";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-
+import Global from "../Global.tsx";
 
 function a11yProps(index: number) {
   return {
@@ -15,7 +14,11 @@ function a11yProps(index: number) {
   };
 }
 
-function GridPanel() {
+interface Props {
+  global: Global
+}
+
+function GridPanel(props:Props) {
   const [value, setValue] = useState(0);
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -31,10 +34,10 @@ function GridPanel() {
           </Tabs>
         </Box>
         <CustomTabPanel tabgroup="grid" value={value} index={0}>
-          <NeuronPanel />
+          <NeuronPanel global={props.global}/>
         </CustomTabPanel>
         <CustomTabPanel tabgroup="grid" value={value} index={1}>
-          <ConnectionPanel />
+          <ConnectionPanel global={props.global}/>
         </CustomTabPanel>
       </Box>
     </>

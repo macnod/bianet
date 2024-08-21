@@ -5,11 +5,16 @@
 (defparameter *net* nil)
 (defparameter *default-page-size* 20)
 (defparameter *last-json* nil)
+(defparameter *last-data* nil)
 (defparameter *last-request* nil)
 (defparameter *min-integer* (truncate -1e12))
 (defparameter *max-integer* (truncate 1e12))
 (defparameter *min-float* -1e12)
 (defparameter *max-float* 1e12)
+(defparameter *cors-headers* (format nil "~{~a~^,~}"
+                                     (list "Content-Type")))
+(defparameter *cors-methods* (format nil "~{~a~^,~}"
+                                 (list :post :get :delete :options)))
 
 (defun rest-service-start (&key (port *default-port*) log-destination)
   (rest-service-stop)
@@ -40,8 +45,14 @@
 
 (defun parse-json (json)
   (handler-case (y:parse json)
-    (error (e) (list :status "fail"
-                     :error (format nil "Malformed JSON. ~a" e)))))
+    (error (e) 
+      (let ((se (ppcre:regex-replace-all
+                 " *\\n *"
+                 (ppcre:regex-replace-all 
+                  "#.([^ ])" (format nil "~a" e) "'\\1'")
+                 " ")))
+        (ds:ds `(:map :status "fail" 
+                      :errors (:array "Malformed JSON" ,se)))))))
 
 (defun select-page (key list page page-size)
   (loop with begin = (* (1- page) page-size)
@@ -62,7 +73,7 @@
                      (filter-function (lambda (x) (declare (ignore x)) t))
                      (rows-function (error ":row-function required"))
                      (page 1)
-                     (page-size 10)
+                     (page-size *default-page-size*)
                      other-result-keys)
   (let* ((list (remove-if-not filter-function (funcall list-function)))
          (data (select-page key list page page-size))
@@ -165,17 +176,21 @@
 (defmacro process-json (&body body)
   `(let* ((data (h:raw-post-data :force-text t))
           (json (parse-json data)))
-     (setf *last-json* json)
-     (progn ,@body)))
+     (setf *last-json* json
+           *last-data* data)
+     (format t "~%json: ~a~%" (ds:ds-list json))
+     (format t "status: ~a~%" (ds:ds-get json :status))
+     (if (equal (ds:ds-get json :status) "fail")
+         (progn
+           (format t "Bad JSON~%")
+           (encode json))
+         (progn ,@body))))
 
 (defun set-headers ()
-  (setf (h:content-type*) "application/json")
-  (setf (h:header-out "Access-Control-Allow-Origin") "*")
-  (setf (h:header-out "Access-Control-Allow-Methods") "POST,GET,OPTIONS")
-  (setf (h:header-out "Access-Control-Allow-Headers")
-        (format nil "~{~a~^, ~}"
-                (list "Content-Type")))
-  (setf (h:header-out "Content-Type") "application/json"))
+  (setf (h:header-out "Access-Control-Allow-Origin") "*"
+        (h:header-out "Access-Control-Allow-Methods") *cors-methods*
+        (h:header-out "Access-Control-Allow-Headers") *cors-headers*
+        (h:header-out "Content-Type") "application/json"))
 
 (defun api-options ()
   (set-headers)

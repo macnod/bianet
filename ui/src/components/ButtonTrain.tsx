@@ -19,7 +19,7 @@ interface Props {
   global: Global
 }
 
-function TrainingPanelTrain(props:Props) {
+function ButtonTrain(props:Props) {
   const url = makeUrl(
     props.global.protocol,
     props.global.host,
@@ -48,4 +48,4 @@ function TrainingPanelTrain(props:Props) {
   );
 }
 
-export default TrainingPanelTrain;
+export default ButtonTrain;

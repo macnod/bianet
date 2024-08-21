@@ -15,7 +15,7 @@ interface Props {
   global: Global
 }
 
-function TrainingPanelClearWeights(props:Props) {
+function ButtonClearWeights(props:Props) {
   const url = makeUrl(
     props.global.protocol,
     props.global.host,
@@ -45,4 +45,4 @@ function TrainingPanelClearWeights(props:Props) {
   );
 }
 
-export default TrainingPanelClearWeights;
+export default ButtonClearWeights;

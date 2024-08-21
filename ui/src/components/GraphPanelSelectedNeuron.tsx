@@ -1,5 +1,7 @@
 import useSWR from 'swr';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
+import { makeUrl } from './utilities.tsx';
+import Global from "../Global.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -82,17 +84,23 @@ function assembleRows(selectedNeuron, data): Row[] {
   return [];
 }
 
-interface GPSNProps {
-  selectedNeuron: string;
+interface Props {
+  selectedNeuron: string,
+  global: Global
 }
 
-function GraphPanelSelectedNeuron(props: GPSNProps) {
-  const endpoint = 'http://localhost:3001/api/neurons?name=' + props.selectedNeuron;
+function GraphPanelSelectedNeuron(props: Props) {
+  const url = makeUrl(
+    props.global.protocol,
+    props.global.host,
+    props.global.port,
+    props.global.api_neurons,
+    {name: props.selectedNeuron});
   const {
     data,
     error,
     isValidating
-  } = useSWR(endpoint, fetcher);
+  } = useSWR(url, fetcher);
   if (error)
     return <div className="failed">Failed to load</div>;
   if (isValidating)

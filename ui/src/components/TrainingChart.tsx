@@ -5,6 +5,7 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import { TrainingError } from "./TrainingError.tsx";
 import { makeUrl } from "./utilities.tsx";
 import Global from "../Global.tsx";
+import FailedStatus from "./FailedStatus.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -12,7 +13,7 @@ interface Props {
   global: Global
 }
 
-function TrainingPanelChart(props:Props) {
+function TrainingChart(props:Props) {
   const [isTraining, setIsTraining] = useState(true);
   const url = makeUrl(
     props.global.protocol,
@@ -30,7 +31,7 @@ function TrainingPanelChart(props:Props) {
     isValidating
   } = useSWR(url, fetcher, {refreshInterval: interval});
 
-  if (data) {
+  if (data && data.result) {
     if (isTraining != data.result.training) {
       setIsTraining(data.result.training);
       if (!isTraining)
@@ -40,6 +41,7 @@ function TrainingPanelChart(props:Props) {
 
   if (error) return <div className="failed">Failed to load</div>;
   if (isValidating) return <div className="loading">Loading...</div>
+  if (data.status === "fail") return <FailedStatus errors={data.errors} />
 
   return (
     <>
@@ -56,4 +58,4 @@ function TrainingPanelChart(props:Props) {
   );
 }
 
-export default TrainingPanelChart;
+export default TrainingChart;

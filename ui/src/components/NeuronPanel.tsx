@@ -7,6 +7,8 @@ import { Neuron } from "./Neuron.tsx";
 import "@silevis/reactgrid/styles.css";
 import useSWR from 'swr';
 import { makeUrl } from "./utilities.tsx";
+import Global from "../Global.tsx";
+import FailedStatus from "./FailedStatus.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -55,12 +57,20 @@ function getNeurons(neurons: Neuron[]): Row[] {
   ];
 }
 
-function NeuronPanel() {
+interface Props {
+  global: Global
+}
+
+function NeuronPanel(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
   const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
   const url = makeUrl(
-    'http', 'localhost', 3001, '/api/neurons', {
+    props.global.protocol,
+    props.global.host,
+    props.global.port,
+    props.global.api_neurons,
+    {
       page: page,
       "page-size": pageSize
     });
@@ -68,6 +78,7 @@ function NeuronPanel() {
   if (error)
     return <div className="failed">Failed to load</div>;
   if (isValidating) return <div className="loading">Loading...</div>;
+  if (data.status === "fail") return <FailedStatus errors={data.errors} />
   const neuronRows = getNeurons(data.result.neurons);
   const neuronColumns = getNeuronColumns(data.result.neurons[0]);
   const pageCount = Math.ceil(data.result.total_size / pageSize);

@@ -7,8 +7,9 @@ import CustomTabPanel from "./components/CustomTabPanel.tsx";
 import GridPanel from "./components/GridPanel.tsx";
 import NetworkPanel from "./components/NetworkPanel.tsx";
 import TrainingPanel from "./components/TrainingPanel.tsx";
-import TrainingPanelTrainingSet from "./components/TrainingPanelTrainingSet.tsx";
 import './App.css';
+import globalSettings from './global.json';
+import Global from "./Global.tsx";
 import styled from "styled-components";
 
 function a11yProps(index: number) {
@@ -31,6 +32,8 @@ const Page = styled.div`
   padding: 2rem;
 `;
 
+const global:Global = globalSettings;
+
 function App() {
   const [value, setValue] = useState(0);
   const handleChange = (event: SyntheticEvent, newValue: number) => {
@@ -50,13 +53,13 @@ function App() {
             </Tabs>
           </Box>
           <CustomTabPanel tabgroup="main" value={value} index={0}>
-            <NetworkPanel />
+            <NetworkPanel global={global}/>
           </CustomTabPanel>
           <CustomTabPanel tabgroup="main" value={value} index={1}>
-            <GridPanel />
+            <GridPanel global={global}/>
           </CustomTabPanel>
           <CustomTabPanel tabgroup="main" value={value} index={2}>
-            <TrainingPanel />
+            <TrainingPanel global={global}/>
           </CustomTabPanel>
         </Box>
       </Page>

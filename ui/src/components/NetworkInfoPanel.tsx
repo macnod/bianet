@@ -1,12 +1,17 @@
 import React from 'react';
 import { useState } from 'react';
-import GraphPanelNetworkSummary from "./GraphPanelNetworkSummary.tsx";
-import GraphPanelSelectedNeuron from "./GraphPanelSelectedNeuron.tsx";
-import GraphPanelSelectedConnection from "./GraphPanelSelectedConnection.tsx";
-import GraphPanelGraph from "./GraphPanelGraph.tsx";
-import TrainingPanelClearWeights from "./TrainingPanelClearWeights.tsx";
+import NetworkSummary from "./NetworkSummary.tsx";
+import SelectedNeuron from "./SelectedNeuron.tsx";
+import SelectedConnection from "./SelectedConnection.tsx";
+import NetworkGraph from "./NetworkGraph.tsx";
+import ButtonClearWeights from "./ButtonClearWeights.tsx";
+import Global from "../Global.tsx";
 
-function NetworkInfoPanel() {
+interface Props {
+  global: Global
+}
+
+function NetworkInfoPanel(props:Props) {
   const [selectedNeuron, setSelectedNeuron] = useState("");
   const [[selectedCxId, selectedCxColor], setSelectedCx] = useState(["", ""]);
   const [seed, setSeed] = useState(0);
@@ -15,20 +20,22 @@ function NetworkInfoPanel() {
     <>
       <div className="panel-container">
         <div className="panel-sidebar">
-          <TrainingPanelClearWeights refresh={refreshGraph}/>
-          <GraphPanelNetworkSummary />
-          <GraphPanelSelectedNeuron selectedNeuron={selectedNeuron} />
-          <GraphPanelSelectedConnection 
+          <ButtonClearWeights global={props.global} refresh={refreshGraph}/>
+          <NetworkSummary global={props.global} />
+          <SelectedNeuron global={props.global} selectedNeuron={selectedNeuron} />
+          <SelectedConnection 
             id={selectedCxId}
             color={selectedCxColor}
+            global={props.global}
           />
         </div>
         <div className="panel-main">
-          <GraphPanelGraph
+          <NetworkGraph
             key={seed}
             seed={seed}
             setSelectedNeuron={setSelectedNeuron}
-            setSelectedConnection={setSelectedCx} 
+            setSelectedConnection={setSelectedCx}
+            global={props.global}
           />
         </div>
       </div>

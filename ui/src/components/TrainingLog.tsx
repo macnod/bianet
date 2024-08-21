@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import { TrainingError } from "./TrainingError.tsx";
 import { makeUrl, isEmpty } from "./utilities.tsx";
 import Global from "../Global.tsx";
+import FailedStatus from "./FailedStatus.tsx";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -40,7 +41,7 @@ interface Props {
   global: Global
 }
 
-function TrainingPanelLog(props:Props) {
+function TrainingLog(props:Props) {
   const [isTraining, setIsTraining] = useState(false);
   const pageSize = 25;
   const [page, setPage] = useState(1);
@@ -58,7 +59,7 @@ function TrainingPanelLog(props:Props) {
     refreshInterval: (x) => 
       (x && 'result' in x && x.result.training) ? 1000 : 0});
   
-  if (data && !isEmpty(data)) {
+  if (data && !isEmpty(data) && data.result) {
     if (isTraining != data.result.training) {
       setIsTraining(data.result.training);
       if (!isTraining)
@@ -68,6 +69,7 @@ function TrainingPanelLog(props:Props) {
 
   if (error) return <div className="failed">Failed to load</div>;
   if (isValidating) return <div className="loading">Loading...</div>
+  if (data.status === "fail") return <FailedStatus errors={data.errors} />
 
   const rows = data.result.selection_size == 0 
     ? [] 
@@ -94,4 +96,4 @@ function TrainingPanelLog(props:Props) {
   );
 }
 
-export default TrainingPanelLog;
+export default TrainingLog;

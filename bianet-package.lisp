@@ -114,6 +114,7 @@
    is-training
    list-bianet-threads
    output-errors
+   replace-training-set
    set-training
    stop-threads
    terminate-bianet-thread

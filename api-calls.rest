@@ -39,7 +39,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "bogus":""
+  "bogus": hello world
 }
 
 
@@ -50,13 +50,13 @@ DELETE http://localhost:3001/api/net
 # List neurons and connections
 
 # Get network's neurons
-GET http://localhost:3001/api/neurons
+GET http://localhost:3001/api/neurons?page-size=100000
 
 # Get neurons in layer 1
-GET http://localhost:3001/api/neurons?layer=1
+GET http://localhost:3001/api/neurons
 
 # Get network's connections
-GET http://localhost:3001/api/connections
+GET http://localhost:3001/api/connections?page-size=5
 
 # Get network's connections
 GET http://localhost:3001/api/connections?page-size=30
@@ -111,10 +111,13 @@ POST http://localhost:3001/api/training-set
 Content-type: application/json
 
 {
-  frames: [
-    [0, 0, 0],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 0]
+  "frames": [
+    {"id": "1", "in": [0.0, 0.0], "out": [0.0]},
+    {"id": "2", "in": [0.0, 1.0], "out": [1.0]},
+    {"id": "3", "in": [1.0, 0.0], "out": [1.0]},
+    {"id": "4", "in": [1.0, 1.0], "out": [0.0]}
   ]
 }
+
+# Delete training set
+DELETE http://localhost:3001/api/training-set

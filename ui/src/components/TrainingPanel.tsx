@@ -4,12 +4,12 @@ import CustomTabPanel from "./CustomTabPanel.tsx";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import TrainingPanelChart from "./TrainingPanelChart.tsx";
-import TrainingPanelClearWeights from "./TrainingPanelClearWeights.tsx";
-import TrainingPanelTrain from "./TrainingPanelTrain.tsx";
-import TrainingPanelLog from "./TrainingPanelLog.tsx";
-import TrainingPanelTrainingSet from "./TrainingPanelTrainingSet.tsx";
-
+import TrainingChart from "./TrainingChart.tsx";
+import ButtonClearWeights from "./ButtonClearWeights.tsx";
+import ButtonTrain from "./ButtonTrain.tsx";
+import TrainingLog from "./TrainingLog.tsx";
+import TrainingSet from "./TrainingSet.tsx";
+import Global from "../Global.tsx";
 
 function a11yProps(index: number) {
   return {
@@ -18,7 +18,11 @@ function a11yProps(index: number) {
   };
 }
 
-function TrainingPanel() {
+interface Props {
+  global: Global
+}
+
+function TrainingPanel(props:Props) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [seed, setSeed] = useState(Math.random());
   const handleChange = (event: React.SyntheticEvent, newSelectedTab: number) => {
@@ -31,9 +35,9 @@ function TrainingPanel() {
     <>
       <div className="panel-container">
         <div className="panel-sidebar">
-          <TrainingPanelClearWeights refresh={refresh}/>
+          <ButtonClearWeights global={props.global} refresh={refresh}/>
           <br/>
-          <TrainingPanelTrain refresh={refresh}/>
+          <ButtonTrain global={props.global} refresh={refresh}/>
         </div>
         <div className="panel-main">
           <Box sx={{ width: '100%' }}>
@@ -45,13 +49,13 @@ function TrainingPanel() {
               </Tabs>
             </Box>
             <CustomTabPanel tabgroup="train" value={selectedTab} index={0}>
-              <TrainingPanelChart key={seed} />
+              <TrainingChart key={seed} global={props.global} />
             </CustomTabPanel>
             <CustomTabPanel tabgroup="train" value={selectedTab} index={1}>
-              <TrainingPanelLog key={seed} />
+              <TrainingLog key={seed} global={props.global} />
             </CustomTabPanel>
             <CustomTabPanel tabgroup="train" value={selectedTab} index={2}>
-              <TrainingPanelTrainingSet />
+              <TrainingSet global={props.global} />
             </CustomTabPanel>
           </Box>
         </div>
