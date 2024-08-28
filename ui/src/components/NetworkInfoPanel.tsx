@@ -6,23 +6,33 @@ import SelectedConnection from "./SelectedConnection.tsx";
 import NetworkGraph from "./NetworkGraph.tsx";
 import ButtonClearWeights from "./ButtonClearWeights.tsx";
 import Global from "../Global.tsx";
+import { Result, getNetwork } from './data-calls.tsx';
 
 interface Props {
-  global: Global
+  global: Global,
+  network: NetworkInfo
 }
 
 function NetworkInfoPanel(props:Props) {
   const [selectedNeuron, setSelectedNeuron] = useState("");
   const [[selectedCxId, selectedCxColor], setSelectedCx] = useState(["", ""]);
   const [seed, setSeed] = useState(0);
+  const result:Result = getNetwork();
+  if (!result.success) return result.error;
   const refreshGraph = () => setSeed(seed + 1);
   return (
     <>
       <div className="panel-container">
         <div className="panel-sidebar">
-          <ButtonClearWeights global={props.global} refresh={refreshGraph}/>
-          <NetworkSummary global={props.global} />
-          <SelectedNeuron global={props.global} selectedNeuron={selectedNeuron} />
+          <ButtonClearWeights 
+            global={props.global} 
+            refresh={refreshGraph}/>
+          <NetworkSummary 
+            global={props.global} 
+            network={result.data} />
+          <SelectedNeuron 
+            global={props.global} 
+            selectedNeuron={selectedNeuron} />
           <SelectedConnection 
             id={selectedCxId}
             color={selectedCxColor}

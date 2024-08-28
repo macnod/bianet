@@ -1,8 +1,8 @@
 import React from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import useSWR from 'swr';
-import { Neuron } from "./Neuron.tsx";
-import { Connection } from "./Connection.tsx";
+import { INeuron } from "./INeuron";
+import { IConnection } from "./IConnection";
 import { makeUrl } from "./utilities.tsx";
 import Global from '../Global.tsx';
 
@@ -13,7 +13,7 @@ interface MinMax {
   max: number
 }
 
-function weightExtremes(connections: Connection[]):MinMax {
+function weightExtremes(connections: IConnection[]):MinMax {
   let max = connections[0].weight;
   let min = connections[0].weight;
   for (var i = 1; i < connections.length; i++) {
@@ -35,8 +35,8 @@ function valueToRGBColor(value:number):string {
     return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
   }
 
-  // If the number is positive, then it goes from white (0) to green (1.0)
-  // If the number is negative, then it goes from white (0) to red (1.0)
+  // If the number is positive, then color goes from white (0) to green (1.0)
+  // If the number is negative, then color goes from white (0) to red (1.0)
   const red = 0;
   const green = 1;
   const blue = 2;
@@ -54,8 +54,8 @@ function valueToRGBColor(value:number):string {
 }
 
 function assembleElements(
-  neurons: Neuron[], 
-  connections: Connection[]
+  neurons: INeuron[], 
+  connections: IConnection[]
 ) {
   let we = weightExtremes(connections);
   const normalize = (w:number) => w >= 0 ? w / we.max : -w / we.min;
@@ -129,8 +129,8 @@ function NetworkGraph(props:Props) {
     neuronData.result.neurons, 
     cxData.result.connections);
   const roots = neuronData.result.neurons
-    .filter((neuron:Neuron) => neuron.layer === 0)
-    .map((neuron:Neuron) => neuron.name);
+    .filter((neuron:INeuron) => neuron.layer === 0)
+    .map((neuron:INeuron) => neuron.name);
   return (
     <>
       <CytoscapeComponent

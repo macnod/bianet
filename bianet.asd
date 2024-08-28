@@ -10,6 +10,7 @@
                :dc-ds
                :hunchentoot
                :yason
+               :uuid
                :cl-ppcre)
   :serial t
   :components ((:file "bianet-package")

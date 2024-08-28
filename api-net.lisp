@@ -66,9 +66,9 @@
                :min_weight (min-weight *net*))))))
 
 (defun validate-create-net (json)
-  (let* ((name (ds:ds-get json "name"))
-         (topology (ds:ds-get json "topology"))
-         (thread-count (ds:ds-get json "thread_count"))
+  (let* ((name (ds:pick json "name"))
+         (topology (ds:pick json "topology"))
+         (thread-count (ds:pick json "thread_count"))
          (errors (append
                   (validate-stringp
                    "name" name :required t :min-size 1 :max-size 20)

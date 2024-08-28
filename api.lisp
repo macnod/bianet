@@ -12,9 +12,10 @@
 (defparameter *min-float* -1e12)
 (defparameter *max-float* 1e12)
 (defparameter *cors-headers* (format nil "~{~a~^,~}"
-                                     (list "Content-Type")))
+                                     (list "Content-Type"
+                                           "Accept")))
 (defparameter *cors-methods* (format nil "~{~a~^,~}"
-                                 (list :post :get :delete :options)))
+                                 (list :post :put :get :delete :options)))
 
 (defun rest-service-start (&key (port *default-port*) log-destination)
   (rest-service-stop)
@@ -178,12 +179,8 @@
           (json (parse-json data)))
      (setf *last-json* json
            *last-data* data)
-     (format t "~%json: ~a~%" (ds:ds-list json))
-     (format t "status: ~a~%" (ds:ds-get json :status))
-     (if (equal (ds:ds-get json :status) "fail")
-         (progn
-           (format t "Bad JSON~%")
-           (encode json))
+     (if (equal (ds:pick json :status) "fail")
+         (encode json)
          (progn ,@body))))
 
 (defun set-headers ()

@@ -1,25 +1,21 @@
 import React from 'react';
 import { useState, ChangeEvent } from 'react';
-import useSWR from 'swr';
 import { ReactGrid, Column, Row, DefaultCellTypes } from '@silevis/reactgrid';
 import "@silevis/reactgrid/styles.css";
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
-import { TrainingError } from "./TrainingError.tsx";
-import { makeUrl, isEmpty } from "./utilities.tsx";
+import { ITrainingError } from "./ITrainingError";
 import Global from "../Global.tsx";
-import FailedStatus from "./FailedStatus.tsx";
+import { Result, getTrainingError } from './data-calls';
 
-const fetcher = (...args) => fetch(...args).then((res) => res.json());
-
-function getColumns(entry:TrainingError): Column[] {
+function getColumns(entry:ITrainingError): Column[] {
   return Object.keys(entry).map(name => ({
     columnId: name,
     width: 120
   }));
 }
 
-function getRows(entries:TrainingError[]): Row[] {
+function getRows(entries:ITrainingError[]): Row[] {
   return [
     {
       rowId: "header",
@@ -46,38 +42,20 @@ function TrainingLog(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
   const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
-  const url = makeUrl(
-    props.global.protocol,
-    props.global.host,
-    props.global.port,
-    props.global.api_train,
-    {
-      page: page,
-      "page-size": pageSize
-    });
-  const {data, error, isValidating} = useSWR(url, fetcher, {
-    refreshInterval: (x) => 
-      (x && 'result' in x && x.result.training) ? 1000 : 0});
-  
-  if (data && !isEmpty(data) && data.result) {
-    if (isTraining != data.result.training) {
-      setIsTraining(data.result.training);
+  const result:Result = getTrainingError(page, pageSize);
+  if (!result.success) return result.error;
+  if ('data' in result) {
+    if (isTraining != result.data.training) {
+      setIsTraining(result.data.training);
       if (!isTraining)
         console.log("Training complete");
     }
   }
-
-  if (error) return <div className="failed">Failed to load</div>;
-  if (isValidating) return <div className="loading">Loading...</div>
-  if (data.status === "fail") return <FailedStatus errors={data.errors} />
-
-  const rows = data.result.selection_size == 0 
-    ? [] 
-    : getRows(data.result.training_log);
-  const columns = data.result.selection_size == 0 
-    ? [] 
-    : getColumns(data.result.training_log[0]);
-  const pageCount = Math.ceil(data.result.total_size / pageSize);
+  if (result.data.selection_size == 0) 
+    return <div className="nothingHere"></div>;
+  const rows = getRows(result.data.training_log);
+  const columns = getColumns(result.data.training_log[0]);
+  const pageCount = Math.ceil(result.data.total_size / pageSize);
   return (
     <>
       <Stack>

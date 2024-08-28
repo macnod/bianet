@@ -1,4 +1,4 @@
-export interface Connection {
+export interface IConnection {
   id: number;
   source: string;
   target: string;

@@ -389,12 +389,18 @@
     (setf (training-set network) frames)
     t))
 
-;; TODO: This function should add or replace frames based on their ID
-;; (defmethod update-training-set ((network t-network) (frames list))
-;;   (when (validate-training-set network frames)
-;;     (loop with ids = (let ((h (make-hash-table 
-;;       for (frame-id inputs outputs) in 
-          
+(defmethod update-training-set ((network t-network) (frames list))
+  (when (validate-training-set network frames)
+    (loop with set = (loop with h = (make-hash-table :test 'equal)
+                           for frame in (training-set network)
+                           for key = (car frame)
+                           do (setf (gethash key h) frame)
+                           finally (return h))
+          for frame in frames
+          for id = (car frame)
+          do (setf (gethash id set) frame)
+          finally (setf (training-set network) (u:hash-values set)))
+    t))
 
 (defmethod training-log-list ((network t-network))
   (with-mutex ((training-log-mutex network))

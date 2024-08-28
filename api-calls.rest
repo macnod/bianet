@@ -52,8 +52,8 @@ DELETE http://localhost:3001/api/net
 # Get network's neurons
 GET http://localhost:3001/api/neurons?page-size=100000
 
-# Get neurons in layer 1
-GET http://localhost:3001/api/neurons
+# Get neuron
+GET http://localhost:3001/api/neurons?name=none
 
 # Get network's connections
 GET http://localhost:3001/api/connections?page-size=5
@@ -62,7 +62,7 @@ GET http://localhost:3001/api/connections?page-size=5
 GET http://localhost:3001/api/connections?page-size=30
 
 # Get specific network connection
-GET http://localhost:3001/api/connections?id=3595
+GET http://localhost:3001/api/connections?id=-1
 
 #
 # Network training
@@ -93,6 +93,13 @@ DELETE http://localhost:3001/api/train
 # Get Training set
 GET http://localhost:3001/api/training-set
 
+# Put Training set
+PUT http://localhost:3001/api/training-set
+Content-Type: application/json
+Accept: application/json
+
+{"frames":[{"id":"1","in":[0.01,0],"out":[0]}]}
+
 # Post training set
 POST http://localhost:3001/api/training-set
 Content-type: application/json
@@ -112,10 +119,20 @@ Content-type: application/json
 
 {
   "frames": [
-    {"id": "1", "in": [0.0, 0.0], "out": [0.0]},
-    {"id": "2", "in": [0.0, 1.0], "out": [1.0]},
-    {"id": "3", "in": [1.0, 0.0], "out": [1.0]},
-    {"id": "4", "in": [1.0, 1.0], "out": [0.0]}
+    {"id": "1", "in": [0, 0], "out": [0]},
+    {"id": "2", "in": [0, 1], "out": [1]},
+    {"id": "3", "in": [1, 0], "out": [1]},
+    {"id": "4", "in": [1, 1], "out": [0]}
+  ]
+}
+
+# Post training set
+PUT http://localhost:3001/api/training-set
+Content-type: application/json
+
+{
+  "frames": [
+    {"id": "1", "in": [1, 1], "out": [0.00]}
   ]
 }
 

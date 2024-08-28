@@ -3,12 +3,10 @@ import { useState, ChangeEvent } from 'react';
 import { ReactGrid, Column, Row, DefaultCellTypes } from '@silevis/reactgrid';
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
-import { Neuron } from "./Neuron.tsx";
+import { INeuron } from "./INeuron";
 import "@silevis/reactgrid/styles.css";
-import useSWR from 'swr';
-import { makeUrl } from "./utilities.tsx";
 import Global from "../Global.tsx";
-import FailedStatus from "./FailedStatus.tsx";
+import { Result, getNeuronData } from './data-calls'
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -25,14 +23,14 @@ function neuronFieldType(name: string): {[key:string]:string} {
   }
 }
 
-function getNeuronColumns(neuron: Neuron): Column[] {
+function getNeuronColumns(neuron: INeuron): Column[] {
   return Object.keys(neuron).map(name => ({
       columnId: name,
       width: 100
     }));
 }
 
-function headerRow(neuron: Neuron): Row {
+function headerRow(neuron: INeuron): Row {
   return {
     rowId: "header",
     cells: Object.keys(neuron).map(name => ({
@@ -42,7 +40,7 @@ function headerRow(neuron: Neuron): Row {
   };
 }
 
-function getNeurons(neurons: Neuron[]): Row[] {
+function getNeurons(neurons: INeuron[]): Row[] {
   return [
     headerRow(neurons[0]),
     ...neurons.map<Row>((neuron, idx) => ({
@@ -65,23 +63,11 @@ function NeuronPanel(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
   const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
-  const url = makeUrl(
-    props.global.protocol,
-    props.global.host,
-    props.global.port,
-    props.global.api_neurons,
-    {
-      page: page,
-      "page-size": pageSize
-    });
-  const {data, error, isValidating} = useSWR(url, fetcher);
-  if (error)
-    return <div className="failed">Failed to load</div>;
-  if (isValidating) return <div className="loading">Loading...</div>;
-  if (data.status === "fail") return <FailedStatus errors={data.errors} />
-  const neuronRows = getNeurons(data.result.neurons);
-  const neuronColumns = getNeuronColumns(data.result.neurons[0]);
-  const pageCount = Math.ceil(data.result.total_size / pageSize);
+  const result:Result = getNeuronData({page: page, pageSize: pageSize});
+  if (!result.success) return result.error;
+  const neuronRows = getNeurons(result.data.neurons);
+  const neuronColumns = getNeuronColumns(result.data.neurons[0]);
+  const pageCount = Math.ceil(result.data.total_size / pageSize);
   return (
     <>
       <Stack alignItems="center">

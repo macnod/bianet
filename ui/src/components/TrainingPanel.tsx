@@ -10,6 +10,7 @@ import ButtonTrain from "./ButtonTrain.tsx";
 import TrainingLog from "./TrainingLog.tsx";
 import TrainingSet from "./TrainingSet.tsx";
 import Global from "../Global.tsx";
+import { Result, getNetwork } from "./data-calls.tsx";
 
 function a11yProps(index: number) {
   return {
@@ -25,12 +26,15 @@ interface Props {
 function TrainingPanel(props:Props) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [seed, setSeed] = useState(Math.random());
-  const handleChange = (event: React.SyntheticEvent, newSelectedTab: number) => {
+  const result:Result = getNetwork();
+  if (!result.success) return result.error;
+  const handleChange = (_event: React.SyntheticEvent, newSelectedTab: number) => {
     setSelectedTab(newSelectedTab);
   };
   const refresh = () => {
     setSeed(Math.random());
   }
+  
   return (
     <>
       <div className="panel-container">
@@ -55,7 +59,11 @@ function TrainingPanel(props:Props) {
               <TrainingLog key={seed} global={props.global} />
             </CustomTabPanel>
             <CustomTabPanel tabgroup="train" value={selectedTab} index={2}>
-              <TrainingSet global={props.global} />
+              <TrainingSet 
+                global={props.global} 
+                inputCount={result.data.input_count}
+                outputCount={result.data.output_count}
+              />
             </CustomTabPanel>
           </Box>
         </div>

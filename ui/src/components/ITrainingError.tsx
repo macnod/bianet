@@ -1,4 +1,4 @@
-export interface TrainingError {
+export interface ITrainingError {
   network_error: number,
   elapsed_time: number,
   iteration: number,

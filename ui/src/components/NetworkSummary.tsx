@@ -1,30 +1,9 @@
 import React from 'react';
-import useSWR from 'swr';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
-import { makeUrl } from './utilities.tsx';
 import Global from "../Global.tsx";
-import FailedStatus from "./FailedStatus.tsx";
-
-const fetcher = (...args) => fetch(...args).then((res) => res.json());
-
-interface NetworkInfo {
-  status: string,
-  result: {
-    name: string,
-    topology: Array<number>,
-    thread_count: number,
-    running: boolean,
-    training: boolean,
-    network_error: number,
-    training_time: number,
-    iterations: number,
-    max_weight: number,
-    min_weight: number
-  }
-}
+import { NetworkInfo } from "./INetworkInfo";
 
 function assembleRows(data: NetworkInfo): Row[] {
-  let result = data.result;
   return [
     {
       rowId: "header",
@@ -37,61 +16,61 @@ function assembleRows(data: NetworkInfo): Row[] {
       rowId: 1,
       cells: [
         {type: "text", text: "name"},
-        {type: "text", text: result.name}]
+        {type: "text", text: data.name}]
     },
     {
       rowId: 2,
       cells: [
         {type: "text", text: "topology"},
-        {type: "text", text: result.topology.join(", ")}]
+        {type: "text", text: data.topology.join(", ")}]
     },
     {
       rowId: 3,
       cells: [
         {type: "text", text: "thread count"},
-        {type: "text", text: '' + result.thread_count}]
+        {type: "text", text: '' + data.thread_count}]
     },
     {
       rowId: 4,
       cells: [
         {type: "text", text: "running"},
-        {type: "text", text: result.running ? 'true' : 'false'}]
+        {type: "text", text: data.running ? 'true' : 'false'}]
     },
     {
       rowId: 5,
       cells: [
         {type: "text", text: "training"},
-        {type: "text", text: result.training ? 'true' : 'false'}]
+        {type: "text", text: data.training ? 'true' : 'false'}]
     },
     {
       rowId: 6,
       cells: [
         {type: "text", text: "network error"},
-        {type: "text", text: '' + result.network_error}]
+        {type: "text", text: '' + data.network_error}]
     },
     {
       rowId: 7,
       cells: [
         {type: "text", text: "training time"},
-        {type: "text", text: result.training_time + ' seconds'}]
+        {type: "text", text: data.training_time + ' seconds'}]
     },    
     {
       rowId: 8,
       cells: [
         {type: "text", text: "iterations"},
-        {type: "text", text: '' + result.iterations}]
+        {type: "text", text: '' + data.iterations}]
     },
     {
       rowId: 9,
       cells: [
         {type: "text", text: "min weight"},
-        {type: "text", text: '' + result.min_weight}]
+        {type: "text", text: '' + data.min_weight}]
     },
     {
       rowId: 10,
       cells: [
         {type: "text", text: "max weight"},
-        {type: "text", text: '' + result.max_weight}]
+        {type: "text", text: '' + data.max_weight}]
     }
   ];
 }
@@ -110,27 +89,13 @@ function assembleColumns(): Column[] {
 }
 
 interface Props {
-  global: Global
+  global: Global,
+  network: NetworkInfo
 }
 
 function NetworkSummary(props:Props) {
-  const url = makeUrl(
-    props.global.protocol,
-    props.global.host,
-    props.global.port,
-    props.global.api_net);
-  const {
-    data,
-    error,
-    isValidating
-  } = useSWR(url, fetcher);
-  if (error)
-    return <div className="failed">Failed to load</div>;
-  if (isValidating)
-    return <div className="loading">Loading...</div>;
-  if (data.status === "fail") return <FailedStatus errors={data.errors} />
-  const rows = assembleRows(data);
-  const columns = assembleColumns();
+  const rows:Row[] = assembleRows(props.network);
+  const columns:Column[] = assembleColumns();
   return (
     <>
       <h3>Network Overview</h3>

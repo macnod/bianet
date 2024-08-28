@@ -110,7 +110,7 @@
    compute-cx-count
    compute-weights-random
    compute-weights-sinusoidal
-   eucledian-error
+   eucledian-distance
    is-training
    list-bianet-threads
    output-errors

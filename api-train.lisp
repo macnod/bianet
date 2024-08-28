@@ -70,9 +70,9 @@
                           :training (json-bool (is-training net)))))))
 
 (defun validate-train-net (net json)
-  (let* ((target-error (ds:ds-get json "target_error"))
-         (max-iterations (ds:ds-get json "max_iterations"))
-         (update-frequency (ds:ds-get json "update_frequency"))
+  (let* ((target-error (ds:pick json "target_error"))
+         (max-iterations (ds:pick json "max_iterations"))
+         (update-frequency (ds:pick json "update_frequency"))
          (errors (append
                   (validate-floatp
                    "target_error" target-error

@@ -82,10 +82,10 @@
                              :topology '(10 16 8 8 10)
                              :thread-count 4))
          (max-iterations 5000)
-         (training-set '(((0 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 0))
-                         ((0 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 1))
-                         ((1 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 1))
-                         ((1 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 0))))
+         (training-set '(("1" (0 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 0))
+                         ("2" (0 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 1))
+                         ("3" (1 0 0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 0 0 1))
+                         ("4" (1 0 0 0 0 0 0 0 0 1) (0 0 0 0 0 0 0 0 0 0))))
          (target-error 0.05)
          (report-frequency 0.5)
          (reports-stack nil)
@@ -112,7 +112,7 @@
                   (nth 0 training-result) target-error))
       (ok (<= (nth 2 training-result) max-iterations)
           "number of training iterations is smaller than max-iterations")
-      (loop for (inputs expected-outputs) in training-set
+      (loop for (frame-id inputs expected-outputs) in training-set
             for outputs = (excite net inputs)
             do (ok (loop for output in outputs
                          for expected-output in expected-outputs

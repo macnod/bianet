@@ -3,12 +3,10 @@ import { useState, ChangeEvent } from 'react';
 import { ReactGrid, Column, Row } from '@silevis/reactgrid';
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
-import { Connection } from "./Connection.tsx";
+import { IConnection } from "./IConnection";
 import "@silevis/reactgrid/styles.css";
-import useSWR from 'swr';
-import { makeUrl } from "./utilities.tsx";
 import Global from "../Global.tsx";
-import FailedStatus from "./FailedStatus.tsx";
+import { Result, getConnectionData } from './data-calls.tsx';
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -18,7 +16,7 @@ function connectionFieldType(name: string): {[key:string]:string} {
   return {type: "number", valueField: "value"};
 }
 
-function getConnectionColumns(connection: Connection): Column[] {
+function getConnectionColumns(connection: IConnection): Column[] {
   return Object.keys(connection).map(name => {
     return {
       columnId: name,
@@ -26,7 +24,7 @@ function getConnectionColumns(connection: Connection): Column[] {
     }});
 }
 
-function headerRow(connection: Connection): Row {
+function headerRow(connection: IConnection): Row {
   return {
     rowId: 'header',
     cells: Object.keys(connection).map(name => ({
@@ -60,24 +58,12 @@ interface Props {
 function ConnectionPanel(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
-  const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
-  const url = makeUrl(
-    props.global.protocol,
-    props.global.host,
-    props.global.port,
-    props.global.api_connections,
-    {
-      page: page,
-      "page-size": pageSize
-    });
-  const {data, error, isValidating} = useSWR(url, fetcher);
-  if (error)
-    return <div className="failed">Failed to load</div>;
-  if (isValidating) return <div className="loading">Loading...</div>;
-  if (data.status === "fail") return <FailedStatus errors={data.errors} />
-  const connectionRows = getConnections(data.result.connections);
-  const connectionColumns = getConnectionColumns(data.result.connections[0]);
-  const pageCount = Math.ceil(data.result.total_size / pageSize);
+  const onPageChange = (_event:ChangeEvent, page:number) => setPage(page);
+  const result:Result = getConnectionData({page: page, "page-size": pageSize});
+  if (!result.success) return result.error;
+  const connectionRows = getConnections(result.data.connections);
+  const connectionColumns = getConnectionColumns(result.data.connections[0]);
+  const pageCount = Math.ceil(result.data.total_size / pageSize);
   return (
     <> 
       <Stack alignItems="center">

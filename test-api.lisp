@@ -31,25 +31,24 @@
 (defun http-get (path)
   (multiple-value-bind (content status headers)
       (dr:http-request (format nil *url-format-string* *port* path))
-    (setf *response-headers* headers
+    (setf *headers* headers
           *content-type* (dr:header-value :content-type headers))
     (if (= status 200)
         (y:parse content)
         status)))
 
-(defun http-post (path plist)
+(defun http-post (path data)
   (multiple-value-bind (content status headers)
-      (dr:http-request (format nil *url-format-string* *port* path)
-                                  :method :post
-                                  :content-type "application/json"
-                                  :content (with-output-to-string (json)
-                                             (y:encode-plist plist json)))
-    (setf *response-headers* headers
+        (dr:http-request (format nil *url-format-string* *port* path)
+                         :method :post
+                         :content-type "application/json"
+                         :content (ds:list-to-json data))
+    (setf *headers* headers
           *content-type* (dr:header-value :content-type headers))
-    (if (= status 200)
+    (if (member status '(200 201 202))
         (y:parse content)
         (progn
-          (format t content)
+          (format t "status: ~d~%content: ~a~%" status content)
           status))))
 
 (rest-service-start :port *port*)
@@ -59,106 +58,106 @@
 (subtest
     "Check POST /api/net"
   (let ((data (http-post "/api/net"
-                         (list :name "test-c"
+                         (list :name "test-a"
                                :topology (vector 2 8 4 1)
                                :thread_count 1))))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok" 
+    (is (ds:pick data "status") "ok" 
         "POST /api/net call succeeds")
-    (is (ds:ds-get data "result" "topology") (list 2 9 5 1)
+    (is (ds:pick data "result" "topology") (list 2 9 5 1)
         "Topology is correct")
-    (is (ds:ds-get data "result" "neuron_count") 17
+    (is (ds:pick data "result" "neuron_count") 17
         "Neuron count is correct")
-    (is (ds:ds-get data "result" "input_count") 2
+    (is (ds:pick data "result" "input_count") 2
         "Count of input-layer neurons is correct")
-    (is (ds:ds-get data "result" "output_count") 1
+    (is (ds:pick data "result" "output_count") 1
         "Count of output-layer neurons is correct")
-    (is (ds:ds-get data "result" "hidden_count") 14
+    (is (ds:pick data "result" "hidden_count") 14
         "Count of hidden-layer neurons is correct")
-    (is (ds:ds-get data "result" "connection_count") 68
+    (is (ds:pick data "result" "connection_count") 68
         "Connection count is correct")))
 
 (subtest
     "Check /api/net endpoint"
   (http-post "/api/net"
-             (list :name "test-c"
+             (list :name "test-b"
                    :topology (vector 2 8 4 1)
                    :thread_count 1))
     (is *content-type* "application/json"
         "Content-type is application/json")
   (let* ((data (http-get "/api/net"))
-         (result (ds:ds-get data "result")))
+         (result (ds:pick data "result")))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok"
+    (is (ds:pick data "status") "ok"
         "/api/net call succeeds")
-    (is (ds:ds-get result "name") "test-c"
+    (is (ds:pick result "name") "test-b"
         "network name is correct")
-    (is (ds:ds-get result "topology") (list 2 9 5 1)
+    (is (ds:pick result "topology") (list 2 9 5 1)
         "network topology is correct")
-    (is (ds:ds-get result "neuron_count") 17
+    (is (ds:pick result "neuron_count") 17
         "network neuron count is correct")
-    (is (ds:ds-get result "connection_count") 68
+    (is (ds:pick result "connection_count") 68
         "network connection count is correct")
-    (is (ds:ds-get result "thread_count") 1
+    (is (ds:pick result "thread_count") 1
         "network thread count is correct")
-    (ok (ds:ds-get result "running")
+    (ok (ds:pick result "running")
         "network threads are running")
-    (is (ds:ds-get result "training") nil
+    (is (ds:pick result "training") nil
         "network training status is correct")
-    (ok (not (ds:ds-get result "network_error"))
+    (ok (not (ds:pick result "network_error"))
         "network error is correct")
-    (ok (not (ds:ds-get result "training_time"))
+    (ok (not (ds:pick result "training_time"))
         "network training time is correct")
-    (ok (not (ds:ds-get result "interations"))
+    (ok (not (ds:pick result "interations"))
         "network training iterations is correct")
-    (ok (> (ds:ds-get result "max_weight") 0.0)
+    (ok (> (ds:pick result "max_weight") 0.0)
         "network max-weight > 0")
-    (ok (< (ds:ds-get result "min_weight") 0.0)
+    (ok (< (ds:pick result "min_weight") 0.0)
         "network min-weight < 0")))
 
 (subtest
     "Bad JSON posted to /api/net"
   (let ((data (http-post "/api/net"
-                         (list :name "test-d"
-                               :name1 "test-e"
+                         (list :name "test-c"
+                               :name1 "test-d"
                                :topology (vector 2 8 4 1)
                                :thread_count 1))))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok"
+    (is (ds:pick data "status") "ok"
         "extra parameters are ignored"))
   (let ((data (http-post "/api/net"
-                         (list :name1 "test-f"
+                         (list :name1 "test-e"
                                :topology (vector 2 8 4 1)
                                :thread_count 1))))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "fail"
+    (is (ds:pick data "status") "fail"
         "call fails because required parameter 'name' is missing")
-    (is (length (ds:ds-get data "errors")) 1
+    (is (length (ds:pick data "errors")) 1
         "single error reported")
-    (is (ds:ds-get data "errors" 0) "\"name\" is required"
+    (is (ds:pick data "errors" 0) "\"name\" is required"
         "error: \"name\" is required"))
   (let ((data (http-post "/api/net"
-                         (list :name "test-g"
+                         (list :name "test-f"
                                :thread_count 1))))
-    (is (ds:ds-get data "status") "fail"
+    (is (ds:pick data "status") "fail"
         "call fails because required parameter 'topology' is missing"))
   (let ((data (http-post "/api/net"
-                         (list :name "test-h"
+                         (list :name "test-g"
                                :topology (vector 2 8 4 1)))))
-    (is (ds:ds-get data "status") "fail"
+    (is (ds:pick data "status") "fail"
         "call fails because required parameter 'thread_count' is missing")
-    (is (car (ds:ds-get data "errors")) "\"thread_count\" is required"
+    (is (car (ds:pick data "errors")) "\"thread_count\" is required"
         "error: \"thread_count\" is required"))
   (let ((data (http-post "/api/net" (list :bogus ""))))
-    (is (ds:ds-get data "status") "fail"
+    (is (ds:pick data "status") "fail"
         "call fails because all required keys are missing")
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "errors") 
+    (is (ds:pick data "errors") 
         (list "\"name\" is required" 
               "\"topology\" is required"
               "\"thread_count\" is required")
@@ -169,13 +168,13 @@
   (let ((data (http-get "/api/neurons")))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok"
+    (is (ds:pick data "status") "ok"
         "/api/neurons call succeeds")
-    (is (ds:ds-get data "result" "total_size") 17
+    (is (ds:pick data "result" "total_size") 17
         "Total size is correct")
-    (is (ds:ds-get data "result" "selection_size") 17
+    (is (ds:pick data "result" "selection_size") 17
         "Selection size is correct")
-    (let ((neurons (ds:ds-get data "result" "neurons")))
+    (let ((neurons (ds:pick data "result" "neurons")))
       (is (length neurons) 17
           "Correct number of neurons listed")
       (ok (zerop (gethash "layer" (nth 0 neurons)))
@@ -187,16 +186,16 @@
 
 (subtest
     "Check /api/connections endpoint"
-  (let ((data (http-get "/api/connections")))
-    (is *content-type* "application/json"
-        "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok"
+  (let ((data (http-get "/api/connections?page-size=10")))
+    (is (ds:pick data "status") "ok"
         "/api/connections call succeeds")
-    (is (ds:ds-get data "result" "total_size") 68
+    (is *content-type* "application/json"
+        "Content-Type is application/json")
+    (is (ds:pick data "result" "total_size") 68
         "Total size is correct")
-    (is (ds:ds-get data "result" "selection_size") 10
+    (is (ds:pick data "result" "selection_size") 10
         "Selection size is correct")
-    (let ((connections (ds:ds-get data "result" "connections")))
+    (let ((connections (ds:pick data "result" "connections")))
       (is (length connections) 10
           "Correct number of connections listed")
       (ok (and (equal (subseq (gethash "source" (nth 0 connections)) 0 1)
@@ -210,99 +209,95 @@
   (let ((topology (vector 2 8 4 1))
         (training-set (list :frames 
                             (vector
-                             (vector 0 0 0)
-                             (vector 0 1 1)
-                             (vector 1 0 1)
-                             (vector 1 1 0))))
+                             (list :id "1" :in (vector 0 0) :out (vector 0))
+                             (list :id "2" :in (vector 0 1) :out (vector 1))
+                             (list :id "3" :in (vector 1 0) :out (vector 1))
+                             (list :id "4" :in (vector 1 1) :out (vector 0)))))
         (training-params (list :target_error 0.05
                                :max_iterations 5000
                                :update_frequency 0.5)))
     (let ((data (http-post "/api/net"
-                           (list :name "test-x"
+                           (list :name "test-h"
                                  :topology topology
                                  :thread_count 1))))
       (is *content-type* "application/json"
           "Content-type is application/json")
-      (is (ds:ds-get data "status") "ok"
+      (is (ds:pick data "status") "ok"
           "created network for xor problem")
-      (ok (not (ds:ds-get data "result" "training"))
+      (ok (not (ds:pick data "result" "training"))
           "network is not training"))
     (let ((data (http-post "/api/training-set" training-set)))
       (is *content-type* "application/json"
           "Content-type is application/json")
-      (is (ds:ds-get data "status") "ok"
+      (is (ds:pick data "status") "ok"
           "posted training set"))
     (let ((data (http-post "/api/train" training-params)))
       (is *content-type* "application/json"
           "Content-type is application/json")
-      (is (ds:ds-get data "status") "ok"
+      (is (ds:pick data "status") "ok"
           "started training")
-      (ok (ds:ds-get data "result" "training")
+      (ok (ds:pick data "result" "training")
           "network is training"))
     (let ((data (loop 
                   for data = (http-get "/api/train")
-                  for training = (ds:ds-get data "result" "training")
+                  for training = (ds:pick data "result" "training")
                   while training
                   do (sleep 0.25)
                   finally (return data))))
-      (is (ds:ds-get data "status") "ok"
+      (is (ds:pick data "status") "ok"
           "last GET /api/training-set successful")
-      (ok (not (ds:ds-get data "result" "training"))
+      (ok (not (ds:pick data "result" "training"))
           "training is complete")
-      (ok (ds:ds-get data "result" "running")
+      (ok (ds:pick data "result" "running")
           "network is running")
-      (ok (> (ds:ds-get data "result" "max_weight") 0)
+      (ok (> (ds:pick data "result" "max_weight") 0)
           "max_weight is positive")
-      (ok (< (ds:ds-get data "result" "min_weight") 0)
+      (ok (< (ds:pick data "result" "min_weight") 0)
           "min_weight is negative")
-      (is (ds:ds-get data "result" "connection_count") 68
+      (is (ds:pick data "result" "connection_count") 68
           "connection_count is correct")
-      (is (ds:ds-get data "result" "output_count") 1
+      (is (ds:pick data "result" "output_count") 1
           "output_count is correct")
-      (is (ds:ds-get data "result" "input_count") 2
+      (is (ds:pick data "result" "input_count") 2
           "input_count is correct")
-      (ok (> (ds:ds-get data "result" "total_size") 0)
+      (ok (> (ds:pick data "result" "total_size") 0)
           "total_size is greater than zero")
-      (ok (> (ds:ds-get data "result" "selection_size") 0)
+      (ok (> (ds:pick data "result" "selection_size") 0)
           "selection_size is greater than zero")
-      (ok (> (length (ds:ds-get data "result" "training_log")) 0)
+      (ok (> (length (ds:pick data "result" "training_log")) 0)
           "training_log has entries"))))
 
 (subtest
     "Check POST /api/training-set"
   (let ((data (http-post 
                "/api/training-set"
-               (list :frames 
-                     (vector 
-                      (vector 0 0 0 1)
-                      (vector 0 1 1 1)
-                      (vector 1 0 1 1)
-                      (vector 1 1 0 1))))))
+               '(:frames ((:id "1" :in (0 0) :out (0 1))
+                          (:id "2" :in (0 1) :out (0 1))
+                          (:id "3" :in (1 1) :out (0 1))
+                          (:id "4" :in (1 1) :out (0 1)))))))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "fail")
-    (is (nth 0 (ds:ds-get data "errors"))
+    (is (ds:pick data "status") "fail")
+    (is (nth 0 (ds:pick data "errors"))
         "Invalid training set"))
   (let ((data (http-post 
                "/api/training-set"
-               (list :frames 
-                     (vector 
-                      (vector 0 0 0)
-                      (vector 0 1 1)
-                      (vector 1 0 1)
-                      (vector 1 1 0))))))
+               '(:frames ((:id "1" :in (0 0) :out (0))
+                          (:id "2" :in (0 1) :out (1))
+                          (:id "3" :in (1 1) :out (1))
+                          (:id "4" :in (1 1) :out (0)))))))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok" "POST /api/training-set succceeds"))
+    (is (ds:pick data "status") "ok" "POST /api/training-set succceeds"))
   (let ((data (http-get "/api/training-set?page=1&page-size=3")))
     (is *content-type* "application/json"
         "Content-type is application/json")
-    (is (ds:ds-get data "status") "ok" "GET /api/training-set succeeds")
-    (is (length (ds:ds-get data "result" "frames")) 3
+    (is (ds:pick data "status") "ok" "GET /api/training-set succeeds")
+    (is (length (ds:pick data "result" "frames")) 3
         "training set page size is correct")
-    (is (ds:ds-get data "result" "total_size") 4
+    (is (ds:pick data "result" "total_size") 4
         "total_size key has correct value")
-    (is (ds:ds-get data "result" "selection_size") 3
+    (is (ds:pick data "result" "selection_size") 3
         "selection_size key has correct value")))
 
 (rest-service-stop)

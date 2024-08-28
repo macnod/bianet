@@ -8,34 +8,56 @@ import Stack from '@mui/material/Stack';
 import { makeUrl } from "./utilities.tsx";
 import Global from "../Global.tsx";
 import FailedStatus from "./FailedStatus.tsx";
+import { Result, getTrainingSet, putTrainingSet } from "./data-calls.tsx";
+import { ITrainingSet, ITSFrame, ITSFrames } from './ITrainingSet';
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
-interface TSFrame {
-  id: string,
-  in: Array<Number>,
-  out: Array<Number>
+function applyChanges(
+  changes: CellChange<TextCell|NumberCell>[],
+  data: ITrainingSet
+): ITSFrames {
+  let newFrames = {};
+  changes.forEach((change) => {
+    var target:string = change.columnId < data.input_count ? "in" : "out";
+    if (target !== "") {
+      data.frames[change.rowId][target][change.columnId] = change.newCell.value;
+      newFrames[change.rowId] = data.frames[change.rowId];
+    }
+  });
+  return {frames: Object.values(newFrames)};
 }
 
-function getColumns(frame:TSFrame): Column[] {
+async function postRequest(url:string, frames:ITSFrames) {
+  return fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(frames)
+  }).then(res => res.json());
+}
+
+function getColumns(inputCount:number, outputCount:number): Column[] {
   return [
     {
       columnId: 'frame-index',
-      width: 75
+      width: 75,
+      resizable: true
     },
     ...Array.from(
-      {length: frame.in.length + frame.out.length},
+      {length: inputCount + outputCount},
       (_value, index) => ({
         columnId: '' + index,
-        width: 100
+        width: 100,
+        resizable: true
       }))
   ];
 }
 
-function getRows(frames:TSFrame[]): Row[] {
-  console.log(frames);
-  console.log(frames[0]);
-  if (frames.length > 0) {
+function getRows(frames:ITSFrame[]): Row[] {
+  if (typeof frames !== 'undefined' && frames.length > 0) {
     return [
       {
         rowId: "header",
@@ -80,43 +102,50 @@ function getRows(frames:TSFrame[]): Row[] {
 }
 
 interface Props {
-  global: Global
+  global: Global,
+  inputCount: number,
+  outputCount: number
 }
 
 function TrainingSet(props:Props) {
   const pageSize = 25;
   const [page, setPage] = useState(1);
-  const onPageChange = (event:ChangeEvent, page:number) => setPage(page);
-  const url = makeUrl(
-    props.global.protocol,
-    props.global.host,
-    props.global.port,
-    props.global.api_training_set, 
-    {
-      page: page,
-      "page-size": pageSize
-    });
-  console.log("url: ", url)
-  const {data, error, isValidating} = useSWR(url, fetcher);
-  
-  if (error) return <div className="failed">Failed to load</div>;
-  if (isValidating) return <div className="loading">Loading...</div>
-  if (data.status === "fail") return <FailedStatus errors={data.errors} />
+  const [key, setKey] = useState(0);
+  const [columns, setColumns] = useState(
+    getColumns(props.inputCount, props.outputCount));
+  const onPageChange = (_event:ChangeEvent<unknown>, page:number) => 
+    setPage(page);
+  const result:Result = getTrainingSet(page, pageSize);
+  if (!result.success) return result.error;
 
-  const rows = data.result.selection_size == 0 
-    ? [] 
-    : getRows(data.result.frames);
-  const columns = data.result.selection_size == 0 
-    ? [] 
-    : getColumns(data.result.frames[0]);
-  const pageCount = Math.ceil(data.result.total_size / pageSize);
+  const handleChanges = (changes:CellChange<TextCell>[]) => {
+    putTrainingSet(applyChanges(changes, result.data), result);
+    console.log('result: ', result);
+    setKey(Math.random());
+  }
+  const handleColumnResize = (ci: Id, width: number) => {
+    setColumns((prevColumns) => {
+      const columnIndex = prevColumns.findIndex(el => el.columnId === ci);
+      const resizedColumn = prevColumns[columnIndex];
+      const updatedColumn = {...resizedColumn, width };
+      prevColumns[columnIndex] = updatedColumn;
+      return [...prevColumns];
+    });
+  }
+
+  const rows = getRows(result.data.frames);
+  const pageCount = Math.ceil(result.data.total_size / pageSize);
   return (
     <>
       <Stack>
         <div className="bianet-grid">
           <ReactGrid 
+            key={key}
             rows={rows} 
             columns={columns} 
+            onCellsChanged={handleChanges}
+            onColumnResized={handleColumnResize}
+            stickyLeftColumns={1}
           />
         </div>
         <Pagination

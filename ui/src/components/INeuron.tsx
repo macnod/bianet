@@ -1,4 +1,4 @@
-export interface Neuron {
+export interface INeuron {
   name: string;
   id: number;
   layer: number;
